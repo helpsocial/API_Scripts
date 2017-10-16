@@ -8,10 +8,10 @@ import configparser
 import requests
 import json
 
-def baseurl():
+def base_url():
     return 'https://api.helpsocial.com'
 
-def commonHeaders():
+def common_headers():
     parser = configparser.SafeConfigParser()
 
     parser.read('config.ini')
@@ -26,8 +26,8 @@ def commonHeaders():
     }
     return headers
 
-def getUserToken():
-    url = baseurl()
+def get_user_token():
+    url = base_url()
 
     parser = configparser.SafeConfigParser()
 
@@ -41,7 +41,7 @@ def getUserToken():
         'password': password
     }
 
-    headers = commonHeaders()
+    headers = common_headers()
     response = requests.post(url + "/2.0/tokens", headers=headers, json=body)
 
     if response.status_code == 401:
@@ -53,14 +53,14 @@ def getUserToken():
         return token
 
 def auth():
-    token = getUserToken()
-    headers = commonHeaders()
+    token = get_user_token()
+    headers = common_headers()
     headers['x-auth-token'] = token
 
     return headers
 
-def sseAuth():
-    url = baseurl()
+def sse_auth():
+    url = base_url()
     headers = auth()
 
     response = requests.get(url + "/2.0/streams/sse/authorization", headers=headers)

@@ -8,10 +8,10 @@ import auth
 import json
 from sseclient import SSEClient
 
-url = auth.baseurl()
-sseToken = auth.sseAuth()
+url = auth.base_url()
+sse_token = auth.sse_auth()
 
-messages = SSEClient(url + "/2.0/streams/sse?authorization=" + sseToken)
+messages = SSEClient(url + "/2.0/streams/sse?authorization=" + sse_token)
 
 for msg in messages:
     print(msg)

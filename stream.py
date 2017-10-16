@@ -9,7 +9,7 @@ import json
 import auth
 
 headers = auth.auth()
-url = auth.baseurl()
+url = auth.base_url()
 
 open_stream = requests.get(url + "/2.0/streams/activity", headers=headers, stream=True)
 
