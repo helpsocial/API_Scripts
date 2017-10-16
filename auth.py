@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 # Author: Robert Collazo <rob@helpsocial.com>
 # Copyright (c) 2017 HelpSocial, Inc.
