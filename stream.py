@@ -11,9 +11,6 @@ import auth
 headers = auth.auth()
 url = auth.baseurl()
 
-print("Connecting to: " + url)
-print(headers)
-
 open_stream = requests.get(url + "/2.0/streams/activity", headers=headers, stream=True)
 
 if open_stream.encoding is None:
