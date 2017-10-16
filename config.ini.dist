@@ -1,0 +1,5 @@
+[account]
+scope = identifier
+key = api_key
+username = someemail@somedomain.com
+password = mysecretpassword
