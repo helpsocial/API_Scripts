@@ -11,7 +11,9 @@ from sseclient import SSEClient
 
 parser = configparser.SafeConfigParser()
 
-parser.read('config.ini')
+if not parser.read('config.ini'):
+    print("File 'config.ini' seems to not exist.")
+    exit(-1)
 
 username = parser.get('account', 'username')
 password = parser.get('account', 'password')
