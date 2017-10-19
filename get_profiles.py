@@ -18,11 +18,6 @@ if not parser.read('config.ini'):
 username = parser.get('account', 'username')
 password = parser.get('account', 'password')
 
-body = {
-    'username': username,
-    'password': password
-}
-
 scope = parser.get('account', 'scope')
 key = parser.get('account', 'key')
 
