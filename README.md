@@ -20,7 +20,7 @@ are also exposed through simple helper methods.
 
 ## Without User
 
-```
+```python
 from client import RestConnectClient
 
 client = RestConnectClient('<your auth_scope>', '<your api_key>')
@@ -34,7 +34,7 @@ client.delete('<path>')
 
 ## With User
 
-```
+```python
 from client import RestConnectClient
 
 client = RestConnectClient('<your auth_scope>',
@@ -55,6 +55,6 @@ For advanced usage see the `examples/` directory.
 
 | Name | Description |
 | ---- | ----------- |
-| auth.py | Explains the basic authentication for a user |
+| auth.py | Performs the steps to necessary to authenticate a user. |
 | ssestream.py | Script to open a connection to the HelpSocial API SSE endpoint. |
 | get_profiles.py | Script to retrieve available network profiles for the authenticated user. |

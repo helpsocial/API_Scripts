@@ -1,4 +1,6 @@
-#!/usr/bin/env python3
+# Author: Jacob Schofield <jacob@helpsocial.com>
+# Copyright (c) 2017 HelpSocial, Inc.
+# See LICENSE for details
 
 from .utils import data_get
 

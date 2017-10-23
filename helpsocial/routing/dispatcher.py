@@ -1,4 +1,6 @@
-
+# Author: Jacob Schofield <jacob@helpsocial.com>
+# Copyright (c) 2017 HelpSocial, Inc.
+# See LICENSE for details
 
 class Dispatcher(object):
     def __init__(self, worker=None):
