@@ -36,7 +36,7 @@ def print_request(request):
     :param request:
     :return:
     """
-    print('{}\n> {} {}\n{}\n>\n{}\n'.format(
+    print('{}\n> {} {}\n{}\n>\n{}'.format(
             '----------START----------',
             request.method,
             request.url,
