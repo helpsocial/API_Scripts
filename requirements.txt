@@ -1,4 +1,2 @@
 sseclient
-configparser
 requests
-json

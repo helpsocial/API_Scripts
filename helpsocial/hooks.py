@@ -1,0 +1,63 @@
+
+from .utils import print_request, print_response
+
+
+class Hook:
+    """
+    TODO
+    """
+    pass
+
+
+class RequestHook(Hook):
+    """
+    TODO
+    """
+    def __call__(self, request):
+        """
+        TODO
+        :param request:
+        :return:
+        """
+        pass
+
+
+class RequestPrinter(RequestHook):
+    """
+    TODO
+    """
+    def __call__(self, request):
+        """
+        TODO
+        :param request:
+        :return:
+        """
+        print_request(request)
+
+
+class ResponseHook(Hook):
+    """
+    TODO
+    """
+    def __call__(self, request, response):
+        """
+        TODO
+        :param request:
+        :param response:
+        :return:
+        """
+        pass
+
+
+class ResponsePrinter(ResponseHook):
+    """
+    TODO
+    """
+    def __call__(self, request, response):
+        """
+        TODO
+        :param request:
+        :param response:
+        :return:
+        """
+        print_response(response)

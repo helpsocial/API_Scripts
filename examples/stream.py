@@ -4,10 +4,12 @@
 # Copyright (c) 2017 HelpSocial, Inc.
 # See LICENSE for details
 
-import auth
-import json
 import configparser
-from sseclient import SSEClient
+import json
+
+import requests
+
+import auth
 
 parser = configparser.SafeConfigParser()
 
@@ -26,10 +28,16 @@ body = {
 scope = parser.get('account', 'scope')
 key = parser.get('account', 'key')
 
+headers = auth.auth(username, password, key, scope)
 url = auth.base_url()
-sse_token = auth.sse_auth(username, password, key, scope)
 
-messages = SSEClient(url + "/2.0/streams/sse?authorization=" + sse_token)
+open_stream = requests.get(url + "/2.0/streams/activity", headers=headers, stream=True)
 
-for msg in messages:
-    print(msg)
+if open_stream.encoding is None:
+    open_stream.encoding = 'utf-8'
+
+for line in open_stream.iter_lines(decode_unicode=True):
+    if line:
+        print(json.loads(line))
+
+

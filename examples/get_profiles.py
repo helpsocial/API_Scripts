@@ -4,10 +4,12 @@
 # Copyright (c) 2017 HelpSocial, Inc.
 # See LICENSE for details
 
-import requests
-import json
-import auth
 import configparser
+import json
+
+import requests
+
+import auth
 
 parser = configparser.SafeConfigParser()
 
