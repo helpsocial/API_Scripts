@@ -2,14 +2,23 @@
 # Copyright (c) 2017 HelpSocial, Inc.
 # See LICENSE for details
 
+try:
+    import ujson as json
+except ImportError:
+    import json
+
 from requests import Request, Session
 from sseclient import SSEClient
+from threading import Thread
+from time import sleep
 
 from .auth import ApplicationAuth, UserAuth, SSEAuth
 from .exceptions import ApiException
 from .utils import data_get
 
 from .decorators import authenticate, require_auth
+from .exceptions import ApiException, AuthenticationException, BadRequestException, ForbiddenException
+from .utils import data_get, is_timeout
 
 API_HOST = 'api.helpsocial.com'
 API_VERSION = '2.0'
@@ -215,105 +224,261 @@ class RestConnectClient(Api):
         return data_get(response.json(), 'data.token')
 
 
-class StreamingConnectClient(RestConnectClient):
+class StreamingConnectClient(Api):
+    """TODO
+
     """
-    TODO
-    """
-    _stream_kwargs = {'stream': True}
 
     def __init__(self,
-                 auth_scope, api_key, user_token, dispatcher,
+                 auth_scope, api_key, dispatcher,
+                 user_token=None,
                  host=None, ssl=None, version=None,
                  request_hooks=None, response_hooks=None):
-        # setup helpsocial with call to parent
+        # initialize api
         super().__init__(auth_scope, api_key, user_token=user_token,
                          host=host, ssl=ssl, version=version,
                          request_hooks=request_hooks,
                          response_hooks=response_hooks)
-        self._dispatcher = dispatcher
+        # ensure a dispatcher has been defined
+        # for the client
+        self._dispatchers = [dispatcher]
+        self.running = False
+
+    # def add_dispatcher(self, dispatcher):
+    #     pass
+    #
+    # def remove_dispatcher(self, dispatcher):
+    #     pass
+    #
+    # def add_connection_event_listener(self, listener):
+    #     pass
 
     @authenticate
-    def get_sse_authentication(self, auth=None):
-        """
-        TODO
+    def get_sse_authorization(self, auth=None, user=None):
+        """TODO
+
+        :param user:
         :param auth:
         :return:
         """
-        response = self.__open_stream('streams/sse/authorization', auth=auth)
-        self.__stream(response)
+
+        params = None if user is None else {'user': user}
+        response = self.get('streams/sse/authorization',
+                            params=params,
+                            auth=auth)
+        return data_get(response.json(), 'data.authorization')
 
     @authenticate
-    def conversations(self, params=None, auth=None):
-        """
-        TODO
+    def conversations(self, params=None, auth=None, async=False):
+        """TODO
+
+        :param async:
         :param params:
         :param auth:
         :return:
         """
-        response = self.__open_stream('streams/conversation', params=params, auth=auth)
-        self.__stream(response)
+
+        if self.running:
+            raise RuntimeError('stream already running')
+        self._start('streams/conversations',
+                    auth,
+                    params=params,
+                    async=async,
+                    sse=False)
 
     @authenticate
-    def activities(self, params=None, auth=None):
-        """
-        TODO
+    def activities(self, params=None, auth=None, async=False):
+        """TODO
+
+        :param async:
         :param params:
         :param auth:
         :return:
         """
-        response = self.__open_stream('streams/activity', params=params, auth=auth)
-        self.__stream(response)
+
+        if self.running:
+            raise RuntimeError('stream already running')
+        self._start('streams/activity',
+                    auth,
+                    params=params,
+                    async=async,
+                    sse=False)
 
     @authenticate
-    def events(self, params=None, auth=None):
-        """
-        TODO
+    def events(self, params=None, auth=None, async=False):
+        """TODO
+
+        :param async:
         :param params:
         :param auth:
         :return:
         """
-        response = self.__open_stream('streams/event', params=params, auth=auth)
-        self.__stream(response)
 
-    def sse(self, authorization, params=None):
-        """
-        TODO
+        if self.running:
+            raise RuntimeError('stream already running')
+        self._start('streams/activity',
+                    auth,
+                    params=params,
+                    async=async,
+                    sse=False)
+
+    def sse(self, authorization, params=None, async=False):
+        """TODO
+
+        :param async:
+        :param authorization:
         :param params:
         :return:
         """
-        auth = SSEAuth(self.auth_scope, self.api_key, authorization)
-        response = self.__open_stream('streams/sse', params=params, auth=auth)
-        sse = SSEClient(response)
+
+        if self.running:
+            raise RuntimeError('stream already running')
+        self._start('streams/sse',
+                    SSEAuth(self.auth_scope, self.api_key, authorization),
+                    params=params,
+                    async=async,
+                    sse=True)
+
+    def _start(self, path, auth, params=None, async=False, sse=False):
+        """TODO
+
+        :param path:
+        :param auth:
+        :param params:
+        :param async:
+        :param sse:
+        :return:
+        """
+
+        self.running = True
+        if async:
+            self._thread = Thread(target=self._run,
+                                  args=(path, auth,),
+                                  kwargs={'params': params, 'sse': sse})
+            self._thread.start()
+        else:
+            self._run(path, auth, params=params, sse=sse)
+
+    def _run(self, path, auth, params=None, sse=False):
+        """TODO
+
+
+        :param path:
+        :param auth:
+        :param params:
+        :param sse:
+        :return:
+        """
+
+        connection = None
+        initial_connection = True
+        disconnect_counter = 0
+        backoff_limit_seconds = 300
+
         try:
-            for event in sse.events():
-                self._dispatcher.dispatch(event)
-        finally:
-            sse.close()
+            while self.running:
+                try:
+                    connection = self.__open_stream(path, auth, params=params)
+                    initial_connection = False
+                    disconnect_counter = 0
+                except (AuthenticationException,
+                        ForbiddenException,
+                        BadRequestException) as ex:
+                    # If we encounter any of these exceptions there
+                    # is no way that we will be able to make the
+                    # connection making the request as is.
+                    raise ex
+                except Exception as ex:
+                    if initial_connection:
+                        # The initial attempt to connect to stream
+                        # has failed for some reason.
+                        raise ex
+                    # The stream has been interrupted
+                    # and we should attempt to reconnect. We apply
+                    # an exponential back off to not overload the
+                    # server and allow it time to heal.
+                    if not self.running:
+                        break
+                    disconnect_counter += 1
+                    sleep(min(2 ** disconnect_counter, backoff_limit_seconds))
+                    continue
 
-    def __open_stream(self, path, params=None, auth=None):
-        """
-        TODO
+                if not self.running:
+                    break
+
+                try:
+                    if sse:
+                        self.__stream_sse(connection)
+                    else:
+                        self.__stream_json(connection)
+                except Exception as ex:
+                    if not is_timeout(ex):
+                        # a fatal exception has occurred
+                        raise ex
+                    disconnect_counter += 1
+                    sleep(min(2 ** disconnect_counter, backoff_limit_seconds))
+        finally:
+            # clean up the allocated connection object
+            # and make sure we've flagged that we're no longer
+            # running
+            self.running = False
+            if connection:
+                connection.close()
+
+    def __open_stream(self, path, auth, params=None):
+        """TODO
+
         :param path:
         :param params:
         :param auth:
         :return:
         """
-        response = self.get(path, params, auth, **self._stream_kwargs)
+
+        response = self.get(path, params, auth, stream=True)
         if response.status_code != 200:
-            raise ApiException(
-                'Failed to start stream',
-                response.status_code,
-                data_get(response.json(), 'data.errors')
-            )
+            errors = data_get(response.json(), 'data.errors')
+            status = response.status_code
+            raise ApiException('Failed to start stream', status, errors)
+
         if response.encoding is None:
             response.encoding = 'utf-8'
         return response
 
-    def __stream(self, response):
-        """
-        TODO
-        :param response:
+    def __stream_sse(self, connection):
+        """TODO
+
+        :param connection:
         :return:
         """
-        for line in response.iter_lines(decode_unicode=True):
-            self._dispatcher.dispatch(line)
+
+        for event in SSEClient(connection):
+            if not self.running:
+                break
+            self.__dispatch(event)
+
+    def __stream_json(self, connection):
+        """TODO
+
+        :param connection:
+        :return:
+        """
+
+        for line in connection.iter_lines(decode_unicode=True):
+            if not self.running:
+                break
+            self.__dispatch(line)
+            decoded = json.loads(line)
+            if 'complete' in decoded:
+                # The bounded stream has completed
+                break
+
+    def __dispatch(self, data):
+        """
+        TODO
+
+        :param data:
+        :return:
+        """
+
+        for dispatcher in self._dispatchers:
+            dispatcher.dispatch(data)

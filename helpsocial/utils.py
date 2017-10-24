@@ -2,8 +2,11 @@
 # Copyright (c) 2017 HelpSocial, Inc.
 # See LICENSE for details
 
-from functools import reduce
 import json
+
+from functools import reduce
+from requests import Timeout
+from ssl import SSLError
 
 
 def data_get(values, key=None, default=None):
@@ -59,9 +62,23 @@ def print_response(response):
     ))
 
 
-def _format_json(data, indent=None, prefix=None):
+def is_timeout(exc):
+    """TODO
+
+    :param exc:
+    :return:
     """
-    TODO
+
+    if isinstance(exc, Timeout):
+        return True
+    if not isinstance(exc, SSLError):
+        return False
+    return exc.args and 'time out' in exc.args[0]
+
+
+def _format_json(data, indent=None, prefix=None):
+    """TODO
+
     :param data:
     :param indent:
     :param prefix:
