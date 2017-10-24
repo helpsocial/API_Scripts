@@ -22,14 +22,41 @@ API_VERSION = '2.0'
 
 
 class Api(object):
-    """TODO
+    """Base Api class wraps the http transport layer with decorators for
+    interaction with the HelpSocial Connect Api.
 
+    It is possible to use this class directly, however it is advised that the
+    RestConnectClient be used for the convenience methods it supplies.
+
+    :type auth_scope: string
+    :param auth_scope: the client auth scope to be used in authentication.
+
+    :type api_key: string
+    :param api_key: the api key to be used by the client in order to authenticate requests.
+
+    :type user_token: string
+    :param user_token: the user's auth token that should be used to authenticate a request.
+
+    :type host: string
+    :param host: the api host to connect to. default ``API_HOST``.
+
+    :type ssl: bool
+    :param ssl: should the client connect over ssl. default True.
+
+    :type version: string
+    :param version: the api version. default ``2.0``
+
+    :type request_hooks: list
+    :param request_hooks: a list of callable request hooks that should be called before the request executes.
+
+    :type response_hooks: list
+    :param response_hooks: a list of callabke response hooks that should be called after the request completes.
     """
 
     def __init__(self,
                  auth_scope, api_key,
                  user_token=None,
-                 host=None, ssl=None, version=None,
+                 host=None, ssl=True, version=None,
                  request_hooks=None, response_hooks=None):
         # set defaults
         host = API_HOST if host is None else host
@@ -50,18 +77,18 @@ class Api(object):
         self._response_hooks = response_hooks
 
     def set_user_token(self, token):
-        """TODO
-
-        :param token:
-        """
+        """Set the default user token for the client."""
 
         self.user_token = token
 
     def register_event_hook(self, event, hook):
-        """TODO
+        """Register a new event hook.
 
-        :param event:
-        :param hook:
+        :type event: string
+        :param event: the event [request, or response] to register the hook for.
+
+        :type hook: callable
+        :param hook: the action to call on the specified event.
         """
 
         if not hasattr(hook, '__call__') or not callable(hook):
@@ -76,7 +103,7 @@ class Api(object):
 
     @require_auth
     def get(self, path, params=None, auth=None, **requests_kwargs):
-        """TODO
+        """Perform a Http GET request on the api at the specified path.
 
         :param path:
         :param params:
@@ -85,6 +112,8 @@ class Api(object):
         :rtype: requests.Response
         :return: :class:`Response <Response>` object
         :raises ApiException:
+        :raises requests.RequestException:
+        :raises ssl.SSLError:
         """
 
         uri = self.get_request_uri(path)
@@ -96,7 +125,7 @@ class Api(object):
     @require_auth
     def put(self, path, params=None, json=None,
             auth=None, **requests_kwargs):
-        """TODO:
+        """Perform a Http PUT request on the api at the specified path.
 
         :param path:
         :param params:
@@ -106,6 +135,8 @@ class Api(object):
         :rtype: requests.Response
         :return: :class:`Response <Response>` object
         :raises ApiException:
+        :raises requests.RequestException:
+        :raises ssl.SSLError:
         """
 
         uri = self.get_request_uri(path)
@@ -117,7 +148,7 @@ class Api(object):
     @require_auth
     def post(self, path, params=None, json=None,
              auth=None, **requests_kwargs):
-        """TODO
+        """Perform a Http POST request on the api at the specified path.
 
         :param path:
         :param params:
@@ -127,6 +158,8 @@ class Api(object):
         :rtype: requests.Response
         :return: :class:`Response <Response>` object
         :raises ApiException:
+        :raises requests.RequestException:
+        :raises ssl.SSLError:
         """
 
         uri = self.get_request_uri(path)
@@ -138,7 +171,7 @@ class Api(object):
     @require_auth
     def delete(self, path, params=None, json=None,
                auth=None, **requests_kwargs):
-        """TODO
+        """Perform a Http DELETE request on the api at the specified path.
 
         :param path:
         :param params:
@@ -148,6 +181,8 @@ class Api(object):
         :rtype: requests.Response
         :return: :class:`Response <Response>` object
         :raises ApiException:
+        :raises requests.RequestException:
+        :raises ssl.SSLError:
         """
 
         uri = self.get_request_uri(path)
@@ -191,6 +226,8 @@ class Api(object):
         :return: :class:`Response <Response>` object
         :rtype: requests.Response
         :raises ApiException:
+        :raises requests.RequestException:
+        :raises ssl.SSLError:
         """
 
         prepared = request.prepare()
@@ -210,8 +247,9 @@ class Api(object):
 
 
 class RestConnectClient(Api):
-    """TODO
-
+    """HelpSocial Connect Api rest client. Provides convenience methods for
+    available api actions on top of the default http transport methods
+    defined by :class:`Api <Api>`.
     """
 
     def authenticate(self, username, password):
@@ -221,6 +259,9 @@ class RestConnectClient(Api):
         :param password:
         :return:
         :rtype: dict
+        :raises ApiException:
+        :raises requests.RequestException:
+        :raises ssl.SSLError:
         """
 
         auth = ApplicationAuth(self.auth_scope, self.api_key)
@@ -235,14 +276,41 @@ class RestConnectClient(Api):
 
 
 class StreamingConnectClient(Api):
-    """TODO
+    """HelpSocial Connect Api streaming client. Provides convenience methods
+    for the available streams produced by the Connection Api.
 
+    :type auth_scope: string
+    :param auth_scope: the client auth scope to be used in authentication.
+
+    :type api_key: string
+    :param api_key: the api key to be used by the client in order to authenticate requests.
+
+    :type dispatcher: Dispatcher
+    :param dispatcher: the dispatcher is responsible for handling each stream event.
+
+    :type user_token: string
+    :param user_token: the user's auth token that should be used to authenticate a request.
+
+    :type host: string
+    :param host: the api host to connect to. default ``API_HOST``.
+
+    :type ssl: bool
+    :param ssl: should the client connect over ssl. default True.
+
+    :type version: string
+    :param version: the api version. default ``2.0``
+
+    :type request_hooks: list
+    :param request_hooks: a list of callable request hooks that should be called before the request executes.
+
+    :type response_hooks: list
+    :param response_hooks: a list of callabke response hooks that should be called after the request completes.
     """
 
     def __init__(self,
                  auth_scope, api_key, dispatcher,
                  user_token=None,
-                 host=None, ssl=None, version=None,
+                 host=None, ssl=True, version=None,
                  request_hooks=None, response_hooks=None):
         # initialize api
         super().__init__(auth_scope, api_key, user_token=user_token,
@@ -254,15 +322,6 @@ class StreamingConnectClient(Api):
         self._dispatchers = [dispatcher]
         self.running = False
 
-    # def add_dispatcher(self, dispatcher):
-    #     pass
-    #
-    # def remove_dispatcher(self, dispatcher):
-    #     pass
-    #
-    # def add_connection_event_listener(self, listener):
-    #     pass
-
     @authenticate
     def get_sse_authorization(self, auth=None, user=None):
         """TODO
@@ -270,6 +329,9 @@ class StreamingConnectClient(Api):
         :param user:
         :param auth:
         :return:
+        :raises ApiException:
+        :raises requests.RequestException:
+        :raises ssl.SSLError:
         """
 
         params = None if user is None else {'user': user}
@@ -286,6 +348,9 @@ class StreamingConnectClient(Api):
         :param params:
         :param auth:
         :return:
+        :raises ApiException:
+        :raises requests.RequestException:
+        :raises ssl.SSLError:
         """
 
         if self.running:
@@ -304,6 +369,9 @@ class StreamingConnectClient(Api):
         :param params:
         :param auth:
         :return:
+        :raises ApiException:
+        :raises requests.RequestException:
+        :raises ssl.SSLError:
         """
 
         if self.running:
@@ -322,6 +390,9 @@ class StreamingConnectClient(Api):
         :param params:
         :param auth:
         :return:
+        :raises ApiException:
+        :raises requests.RequestException:
+        :raises ssl.SSLError:
         """
 
         if self.running:
@@ -339,12 +410,15 @@ class StreamingConnectClient(Api):
         :param authorization:
         :param params:
         :return:
+        :raises ApiException:
+        :raises requests.RequestException:
+        :raises ssl.SSLError:
         """
 
         if self.running:
             raise RuntimeError('stream already running')
         self._start('streams/sse',
-                    SSEAuth(self.auth_scope, self.api_key, authorization),
+                    SSEAuth(authorization),
                     params=params,
                     async=async,
                     sse=True)
@@ -370,14 +444,19 @@ class StreamingConnectClient(Api):
             self._run(path, auth, params=params, sse=sse)
 
     def _run(self, path, auth, params=None, sse=False):
-        """TODO
+        """Run the desired stream.
 
+        :type path: string
+        :param path: the path to the streaming resource.
 
-        :param path:
-        :param auth:
-        :param params:
-        :param sse:
-        :return:
+        :type auth: requests.AuthBase
+        :param auth: the authentication required for the streaming resource.
+
+        :type params: dict
+        :param params: request parameters
+
+        :type sse: bool
+        :param sse: is this a stream of server sent events
         """
 
         connection = None
@@ -388,7 +467,7 @@ class StreamingConnectClient(Api):
         try:
             while self.running:
                 try:
-                    connection = self.__open_stream(path, auth, params=params)
+                    connection = self._open_stream(path, auth, params=params)
                     initial_connection = False
                     disconnect_counter = 0
                 except (AuthenticationException,
@@ -418,9 +497,9 @@ class StreamingConnectClient(Api):
 
                 try:
                     if sse:
-                        self.__stream_sse(connection)
+                        self._stream_sse(connection)
                     else:
-                        self.__stream_json(connection)
+                        self._stream_json(connection)
                 except Exception as ex:
                     if not is_timeout(ex):
                         # a fatal exception has occurred
@@ -435,13 +514,21 @@ class StreamingConnectClient(Api):
             if connection:
                 connection.close()
 
-    def __open_stream(self, path, auth, params=None):
-        """TODO
+    def _open_stream(self, path, auth, params=None):
+        """Open the streaming connection.
 
+        :type path: string
         :param path:
-        :param params:
+
+        :type auth: requests.AuthBase
         :param auth:
-        :return:
+
+        :type params: dict
+        :param params:
+
+        :rtype: requests.Response
+        :return: the connected request response
+        :raises ApiException:
         """
 
         response = self.get(path, params, auth, stream=True)
@@ -454,40 +541,38 @@ class StreamingConnectClient(Api):
             response.encoding = 'utf-8'
         return response
 
-    def __stream_sse(self, connection):
-        """TODO
+    def _stream_sse(self, connection):
+        """Handle (parse) a stream of Server Sent Events
 
+        :type connection: requests.Response
         :param connection:
-        :return:
         """
 
         for event in SSEClient(connection):
             if not self.running:
                 break
-            self.__dispatch(event)
+            self._dispatch(event)
 
-    def __stream_json(self, connection):
-        """TODO
+    def _stream_json(self, connection):
+        """Handle (parse) a stream of newline delimited json objects.
 
+        :type connection: requests.Response
         :param connection:
-        :return:
         """
 
         for line in connection.iter_lines(decode_unicode=True):
             if not self.running:
                 break
-            self.__dispatch(line)
+            self._dispatch(line)
             decoded = json.loads(line)
             if 'complete' in decoded:
                 # The bounded stream has completed
                 break
 
-    def __dispatch(self, data):
-        """
-        TODO
+    def _dispatch(self, data):
+        """Dispatch the stream data using each registered dispatcher.
 
         :param data:
-        :return:
         """
 
         for dispatcher in self._dispatchers:

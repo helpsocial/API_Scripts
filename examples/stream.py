@@ -29,7 +29,9 @@ def read_config(path):
     """Parse the json configuration file found at `path` into
     a python dictionary.
 
+    :type path: string
     :param path: Absolute path to the configuration file.
+
     :rtype: dict
     :return: The configuration file parsed into a dictionary.
     """
@@ -45,7 +47,9 @@ def authenticate(config):
     """Use the provided configuration to retrieve
     the users auth token.
 
+    :type config: dict
     :param config: a dictionary configuration object.
+
     :rtype: string:
     :return: the specified user's auth token.
     """
@@ -70,8 +74,11 @@ def sse_stream(config, ttl=None):
     be completed killed issuing a keyboard interrupt or any other
     kill sig.
 
+    :type config: dict
     :param config:
-    :return:
+
+    :type ttl: int
+    :param ttl: the stream time to live, after which it will disconnect automatically
     """
 
     config = read_config(config)
@@ -113,9 +120,14 @@ def json_stream(stream, config, ttl=None):
     be completed killed issuing a keyboard interrupt or any other
     kill sig.
 
+    :type stream: string
     :param stream:
+
+    :type config: string
     :param config:
-    :return:
+
+    :type ttl: int
+    :param ttl: the stream time to live, after which it will disconnect automatically
     """
 
     config = read_config(config)

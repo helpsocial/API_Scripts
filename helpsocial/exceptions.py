@@ -6,16 +6,16 @@ from .utils import data_get
 
 
 class ApiException(Exception):
-    """TODO
-
-    """
+    """Base class for all HelpSocial Connect Api exceptions."""
 
     def __init__(self, message, code=None, details=None):
-        """TODO
-
-        :param message:
-        :param code:
-        :param details:
+        """
+        :type message: string
+        :param message: the response message
+        :type code: int
+        :param code: the response status code
+        :type details: dict
+        :param details: details for the error response
         """
 
         self.message = message
@@ -24,10 +24,13 @@ class ApiException(Exception):
 
     @staticmethod
     def make(response):
-        """TODO
+        """Static factory method which transforms an api error response
+        into the proper exception.
 
-        :param response:
-        :return:
+        :type response: requests.Response
+        :param response: the current response instance
+        :rtype ApiException
+        :return: the exception instance
         """
 
         def default_factory(message, errors, code):
@@ -59,54 +62,42 @@ class ApiException(Exception):
 
 
 class BadRequestException(ApiException):
-    """TODO
-
-    """
+    """Wraps requests."""
 
     def __init__(self, message, details=None):
         super().__init__(message, 400, details=details)
 
 
 class AuthenticationException(ApiException):
-    """TODO
-
-    """
+    """Wraps requests which failed authentication."""
 
     def __init__(self, message, details=None):
         super().__init__(message, 401, details=details)
 
 
 class ForbiddenException(ApiException):
-    """TODO
-
-    """
+    """Wraps requests which attempted to access a resource without proper permissions."""
 
     def __init__(self, message, details=None):
         super().__init__(message, 403, details=details)
 
 
 class NotFoundException(ApiException):
-    """TODO
-
-    """
+    """Wraps requests which attempted to access a resource that does exist."""
 
     def __init__(self, message, details=None):
         super().__init__(message, 404, details=details)
 
 
 class ConflictException(ApiException):
-    """TODO
-
-    """
+    """Wraps requests creating duplicate resources."""
 
     def __init__(self, message, details=None):
         super().__init__(message, 409, details=details)
 
 
 class ServerException(ApiException):
-    """TODO
-
-    """
+    """Wraps general server error responses."""
 
     def __init__(self, message, code, details=None):
         super().__init__(message, code, details=details)

@@ -45,7 +45,7 @@ def print_request(request):
     form to the console.
 
     :type request: requests.PreparedRequest
-    :param request: :class:`PreparedRequest <PreparedRequest>` object to print
+    :param request: request object to print
     """
 
     print('{}\n> {} {}\n{}\n>\n{}'.format(
@@ -64,7 +64,7 @@ def print_response(response, with_body=True):
     this call will block until the entire response body is read.
 
     :type response: requests.Response
-    :param response: :class:`Response <Response>` object to print
+    :param response: response object to print
 
     :type with_body: bool
     :param with_body: print the response body, this flag SHOULD be set when
