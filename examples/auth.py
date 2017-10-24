@@ -100,27 +100,19 @@ def main(username, config=None):
 
 
 if __name__ == '__main__':
-    parser = ArgumentParser(
-        prog='auth',
-        description='Performs the authentication requests for the '
-                    'specified user. '
-    )
+    parser = ArgumentParser(prog='auth',
+                            description='Performs the authentication '
+                                        'requests for the specified user. ')
 
-    parser.add_argument(
-        'username',
-        help='The username for the user to authenticate.'
-    )
-
-    parser.add_argument(
-        '--config',
-        help='Path to json configuration file.',
-        default=join(dirname(abspath(__file__)), '.config.json')
-    )
+    parser.add_argument('username',
+                        help='The username for the user to authenticate.')
+    parser.add_argument('--config',
+                        help='Path to json configuration file.',
+                        default=join(dirname(abspath(__file__)),
+                                     '.config.json')
+                        )
 
     args = vars(parser.parse_args())
 
-    username = args['username']
-    del args['username']
-
-    main(username, **args)
+    main(**args)
 

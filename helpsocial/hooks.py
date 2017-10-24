@@ -6,61 +6,73 @@ from .utils import print_request, print_response
 
 
 class Hook:
+    """TODO
+
     """
-    TODO
-    """
+
     pass
 
 
 class RequestHook(Hook):
+    """TODO
+
     """
-    TODO
-    """
+
     def __call__(self, request):
-        """
-        TODO
+        """TODO
+
         :param request:
         :return:
         """
+
         pass
 
 
 class RequestPrinter(RequestHook):
+    """TODO
+
     """
-    TODO
-    """
+
     def __call__(self, request):
-        """
-        TODO
+        """TODO
+
         :param request:
         :return:
         """
+
         print_request(request)
 
 
 class ResponseHook(Hook):
+    """TODO
+
     """
-    TODO
-    """
+
     def __call__(self, request, response):
-        """
-        TODO
+        """TODO
+
         :param request:
         :param response:
         :return:
         """
+
         pass
 
 
 class ResponsePrinter(ResponseHook):
+    """TODO
+
     """
-    TODO
-    """
+
+    def __init__(self, streaming=False):
+        self._streaming = streaming
+
     def __call__(self, request, response):
-        """
-        TODO
+        """TODO
+
         :param request:
         :param response:
         :return:
         """
-        print_response(response)
+
+        print_response(response, not self._streaming)

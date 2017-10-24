@@ -6,9 +6,10 @@ from requests.auth import AuthBase
 
 
 class TokenAuth(AuthBase):
+    """TODO
+
     """
-    TODO
-    """
+
     def __init__(self):
         super().__init__()
 
@@ -17,18 +18,20 @@ class TokenAuth(AuthBase):
         return request
 
     def _authenticate(self, request):
-        """
-        TODO
+        """TODO
+
         :param request:
         :return:
         """
+
         raise RuntimeError('must be implemented by an inheritor')
 
 
 class ApplicationAuth(TokenAuth):
+    """TODO
+
     """
-    TODO
-    """
+
     def __init__(self, auth_scope, api_key):
         super().__init__()
         self._auth_scope = auth_scope
@@ -42,9 +45,10 @@ class ApplicationAuth(TokenAuth):
 
 
 class UserAuth(ApplicationAuth):
+    """TODO
+
     """
-    TODO
-    """
+
     def __init__(self, auth_scope, api_key, user_token):
         super().__init__(auth_scope, api_key)
         self._user_token = user_token
@@ -55,9 +59,10 @@ class UserAuth(ApplicationAuth):
 
 
 class SSEAuth(ApplicationAuth):
+    """TODO
+
     """
-    TODO
-    """
+
     def __init__(self, auth_scope, api_key, authorization_code):
         super().__init__(auth_scope, api_key)
         self._code = authorization_code

@@ -10,13 +10,14 @@ from ssl import SSLError
 
 
 def data_get(values, key=None, default=None):
-    """
-    TODO
+    """TODO
+
     :param values:
     :param key:
     :param default:
     :return:
     """
+
     if values is None:
         raise ValueError('values must be dict')
 
@@ -34,11 +35,12 @@ def data_get(values, key=None, default=None):
 
 
 def print_request(request):
-    """
-    TODO
+    """TODO
+
     :param request:
     :return:
     """
+
     print('{}\n> {} {}\n{}\n>\n{}'.format(
             '----------START----------',
             request.method,
@@ -48,16 +50,19 @@ def print_request(request):
     ))
 
 
-def print_response(response):
-    """
-    TODO
+def print_response(response, with_body=True):
+    """TODO
+
+    :param with_body:
     :param response:
     :return:
     """
+
+    body = _format_json(response.json(), 2, '< ') if with_body else None
     print('< Status: {}\n{}\n<\n{}\n{}'.format(
         response.status_code,
         _format_headers(response.headers, '< '),
-        _format_json(response.json(), 2, '< '),
+        body,
         '----------END----------'
     ))
 
@@ -84,6 +89,7 @@ def _format_json(data, indent=None, prefix=None):
     :param prefix:
     :return:
     """
+
     if prefix is None:
         return json.dumps(data, indent=indent)
 
@@ -93,12 +99,13 @@ def _format_json(data, indent=None, prefix=None):
 
 
 def _format_headers(headers, prefix=None):
-    """
-    TODO
+    """TODO
+
     :param headers:
     :param prefix:
     :return:
     """
+
     return '\n'.join('{}{}: {}'.format(prefix, k, v)
                      for k, v
                      in headers.items())

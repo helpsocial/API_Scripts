@@ -13,9 +13,6 @@ from threading import Thread
 from time import sleep
 
 from .auth import ApplicationAuth, UserAuth, SSEAuth
-from .exceptions import ApiException
-from .utils import data_get
-
 from .decorators import authenticate, require_auth
 from .exceptions import ApiException, AuthenticationException, BadRequestException, ForbiddenException
 from .utils import data_get, is_timeout
@@ -25,9 +22,10 @@ API_VERSION = '2.0'
 
 
 class Api(object):
+    """TODO
+
     """
-    TODO
-    """
+
     def __init__(self,
                  auth_scope, api_key,
                  user_token=None,
@@ -52,18 +50,20 @@ class Api(object):
         self._response_hooks = response_hooks
 
     def set_user_token(self, token):
-        """
-        TODO
+        """TODO
+
         :param token:
         """
+
         self.user_token = token
 
     def register_event_hook(self, event, hook):
-        """
-        TODO
+        """TODO
+
         :param event:
         :param hook:
         """
+
         if not hasattr(hook, '__call__') or not callable(hook):
             raise ValueError('callable required.')
 
@@ -76,8 +76,8 @@ class Api(object):
 
     @require_auth
     def get(self, path, params=None, auth=None, **requests_kwargs):
-        """
-        TODO
+        """TODO
+
         :param path:
         :param params:
         :param auth:
@@ -86,6 +86,7 @@ class Api(object):
         :rtype: requests.Response
         :raises ApiException:
         """
+
         uri = self.get_request_uri(path)
         return self.__execute(
             Request('GET', uri, params=params, auth=auth),
@@ -96,6 +97,7 @@ class Api(object):
     def put(self, path, params=None, json=None,
             auth=None, **requests_kwargs):
         """TODO:
+
         :param path:
         :param params:
         :param json:
@@ -105,6 +107,7 @@ class Api(object):
         :rtype: requests.Response
         :raises ApiException:
         """
+
         uri = self.get_request_uri(path)
         return self.__execute(
                 Request('PUT', uri, params=params, json=json, auth=auth),
@@ -114,8 +117,8 @@ class Api(object):
     @require_auth
     def post(self, path, params=None, json=None,
              auth=None, **requests_kwargs):
-        """
-        TODO
+        """TODO
+
         :param path:
         :param params:
         :param json:
@@ -125,6 +128,7 @@ class Api(object):
         :rtype: requests.Response
         :raises ApiException:
         """
+
         uri = self.get_request_uri(path)
         return self.__execute(
                 Request('POST', uri, params=params, json=json, auth=auth),
@@ -134,8 +138,8 @@ class Api(object):
     @require_auth
     def delete(self, path, params=None, json=None,
                auth=None, **requests_kwargs):
-        """
-        TODO
+        """TODO
+
         :param path:
         :param params:
         :param json:
@@ -145,6 +149,7 @@ class Api(object):
         :rtype: requests.Response
         :raises ApiException:
         """
+
         uri = self.get_request_uri(path)
         return self.__execute(
                 Request('DELETE', uri, params=params, json=json, auth=auth),
@@ -152,12 +157,13 @@ class Api(object):
         )
 
     def get_request_uri(self, path):
-        """
-        TODO
+        """TODO
+
         :param path:
         :return string:
         :raises ApiException:
         """
+
         scheme = 'https' if self._ssl else 'http'
         return '{scheme}://{host}/{version}/{path}'.format(
             scheme=scheme,
@@ -167,24 +173,26 @@ class Api(object):
         )
 
     def get_auth(self):
-        """
-        TODO
+        """TODO
+
         :return: :class:`BaseAuth <BaseAuth>` object
         :rtype: requests.BaseAuth
         """
+
         if self.user_token is None:
             return ApplicationAuth(self.auth_scope, self.api_key)
         return UserAuth(self.auth_scope,self.api_key, self.user_token)
 
     def __execute(self, request, **requests_kwargs):
-        """
-        TODO
+        """TODO
+
         :param request:
         :param requests_kwargs:
         :return: :class:`Response <Response>` object
         :rtype: requests.Response
         :raises ApiException:
         """
+
         prepared = request.prepare()
         try:
             for hook in self._request_hooks:
@@ -202,17 +210,19 @@ class Api(object):
 
 
 class RestConnectClient(Api):
+    """TODO
+
     """
-    TODO
-    """
+
     def authenticate(self, username, password):
-        """
-        TODO
+        """TODO
+
         :param username:
         :param password:
         :return:
         :rtype: dict
         """
+
         auth = ApplicationAuth(self.auth_scope, self.api_key)
         body = {
             'username': username,
