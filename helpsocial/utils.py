@@ -10,12 +10,18 @@ from ssl import SSLError
 
 
 def data_get(values, key=None, default=None):
-    """TODO
+    """Retrieve the key from the ``values`` dictionary
+    using a "dot notation" key string.
 
-    :param values:
-    :param key:
-    :param default:
-    :return:
+    :type values: dict
+    :param values: the values dict containing the key
+
+    :type key: string
+    :param key: a dot notation key string used to access the dict
+
+    :param default: the default value for the key if not found
+
+    :return: the key value or ``default`` if not found
     """
 
     if values is None:
@@ -35,10 +41,11 @@ def data_get(values, key=None, default=None):
 
 
 def print_request(request):
-    """TODO
+    """Print the details of the request in a human readable
+    form to the console.
 
-    :param request:
-    :return:
+    :type request: requests.PreparedRequest
+    :param request: :class:`PreparedRequest <PreparedRequest>` object to print
     """
 
     print('{}\n> {} {}\n{}\n>\n{}'.format(
@@ -51,11 +58,17 @@ def print_request(request):
 
 
 def print_response(response, with_body=True):
-    """TODO
+    """Print the details of the response in a human readable
+    form to the console. If the response is streaming the body
+    the ``with_body`` flag should be set to False. If not, then
+    this call will block until the entire response body is read.
 
-    :param with_body:
-    :param response:
-    :return:
+    :type response: requests.Response
+    :param response: :class:`Response <Response>` object to print
+
+    :type with_body: bool
+    :param with_body: print the response body, this flag SHOULD be set when
+    the initial request is streaming the response.
     """
 
     body = _format_json(response.json(), 2, '< ') if with_body else None
@@ -68,9 +81,12 @@ def print_response(response, with_body=True):
 
 
 def is_timeout(exc):
-    """TODO
+    """Checks if the exception is a known request timeout exception.
 
-    :param exc:
+    :type exc: BaseException
+    :param exc: the exception to verify type of
+
+    :rtype: bool
     :return:
     """
 
@@ -81,31 +97,43 @@ def is_timeout(exc):
     return exc.args and 'time out' in exc.args[0]
 
 
-def _format_json(data, indent=None, prefix=None):
-    """TODO
+def _format_json(data, indent=None, line_prefix=None):
+    """Format the json data applying a prefix to each line if defined.
 
+    :type data: dict
     :param data:
+
+    :type indent: int
     :param indent:
-    :param prefix:
+
+    :type line_prefix: string
+    :param line_prefix:
+
+    :rtype: string
     :return:
     """
 
-    if prefix is None:
+    if line_prefix is None:
         return json.dumps(data, indent=indent)
 
-    return '\n'.join('{}{}'.format(prefix, line)
+    return '\n'.join('{}{}'.format(line_prefix, line)
                      for line
                      in json.dumps(data, indent=indent).splitlines())
 
 
-def _format_headers(headers, prefix=None):
-    """TODO
+def _format_headers(headers, line_prefix=None):
+    """Create a human readable formatted string of headers.
 
+    :type headers: dict
     :param headers:
-    :param prefix:
+
+    :type line_prefix: string
+    :param line_prefix:
+
+    :rtype: string
     :return:
     """
 
-    return '\n'.join('{}{}: {}'.format(prefix, k, v)
+    return '\n'.join('{}{}: {}'.format(line_prefix, k, v)
                      for k, v
                      in headers.items())

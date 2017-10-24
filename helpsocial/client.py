@@ -82,8 +82,8 @@ class Api(object):
         :param params:
         :param auth:
         :param requests_kwargs:
-        :return: :class:`Response <Response>` object
         :rtype: requests.Response
+        :return: :class:`Response <Response>` object
         :raises ApiException:
         """
 
@@ -103,8 +103,8 @@ class Api(object):
         :param json:
         :param auth:
         :param requests_kwargs:
-        :return: :class:`Response <Response>` object
         :rtype: requests.Response
+        :return: :class:`Response <Response>` object
         :raises ApiException:
         """
 
@@ -124,8 +124,8 @@ class Api(object):
         :param json:
         :param auth:
         :param requests_kwargs:
-        :return: :class:`Response <Response>` object
         :rtype: requests.Response
+        :return: :class:`Response <Response>` object
         :raises ApiException:
         """
 
@@ -145,8 +145,8 @@ class Api(object):
         :param json:
         :param auth:
         :param requests_kwargs:
-        :return: :class:`Response <Response>` object
         :rtype: requests.Response
+        :return: :class:`Response <Response>` object
         :raises ApiException:
         """
 

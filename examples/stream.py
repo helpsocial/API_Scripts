@@ -9,6 +9,7 @@ import getpass
 import os
 import json
 import sys
+from time import time
 
 from argparse import ArgumentParser
 from os.path import abspath, dirname, join
@@ -63,7 +64,7 @@ def authenticate(config):
     return data_get(token, 'value')
 
 
-def sse_stream(config):
+def sse_stream(config, ttl=None):
     """Basic demo reading from a stream of server sent events. The events
     are printed to the console using a `ConsolePrintWorker`. The demo can
     be completed killed issuing a keyboard interrupt or any other
@@ -88,16 +89,25 @@ def sse_stream(config):
             response_hooks=[ResponsePrinter(True)]
     )
 
+    start = time()
     client.sse(client.get_sse_authorization(), async=True)
 
     try:
+        forever = ttl < 0
         while True:
-            pass
+            if not forever and ((time() > start) + ttl):
+                break
     except KeyboardInterrupt:
+        # We ignore the keyboard interrupt - The user sent it,
+        # and knows they sent it
         pass
+    finally:
+        # Tell the client to stop the underlying
+        # stream thread.
+        client.running = False
 
 
-def json_stream(stream, config):
+def json_stream(stream, config, ttl=None):
     """Basic demo reading from a json stream. Each json entity is
     printed to the console using a `ConsolePrintWorker`. The demo can
     be completed killed issuing a keyboard interrupt or any other
@@ -131,13 +141,22 @@ def json_stream(stream, config):
     }
 
     stream = streams.get(stream, default_stream)
+    start = time()
     stream(async=True)
 
     try:
+        forever = ttl < 0
         while True:
-            pass
+            if not forever and ((time() > start) + ttl):
+                break
     except KeyboardInterrupt:
+        # We ignore the keyboard interrupt - The user sent it,
+        # and knows they sent it
         pass
+    finally:
+        # Tell the client to stop the underlying
+        # stream thread.
+        client.running = False
 
 
 if __name__ == '__main__':
@@ -146,6 +165,12 @@ if __name__ == '__main__':
         description='Begin streaming the specified stream.'
     )
 
+    parser.add_argument('--ttl',
+                        help='Control the length of time the stream will'
+                             'run for in seconds. By default it will run'
+                             'until cancelled.)',
+                        type=int,
+                        default=-1)
     parser.add_argument('--config',
                         help='Path to json configuration file.',
                         default=join(dirname(abspath(__file__)),
