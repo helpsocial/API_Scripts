@@ -11,7 +11,7 @@ from threading import Thread
 from time import sleep, time
 
 from .auth import ApplicationAuth, UserAuth, SSEAuth
-from .decorators import set_auth, require_auth
+from .decorators import set_auth, require_auth, Authenticate
 from .exceptions import ApiException, AuthenticationException, BadRequestException, ForbiddenException
 from .utils import data_get, is_timeout
 
@@ -307,7 +307,7 @@ class RestConnectClient(Api):
 
         return data_get(response.json(), 'data.token')
 
-    @set_auth
+    @Authenticate(Api.get_auth)
     def get_sse_authorization(self, auth=None):
         """TODO
         :type auth: requests.BaseAuth
@@ -378,7 +378,7 @@ class StreamingConnectClient(Api):
         self._dispatchers = [dispatcher]
         self._running = False
 
-    @set_auth
+    @Authenticate(Api.get_auth)
     def conversations(self, params=None, auth=None, async=False):
         """TODO
 
@@ -400,7 +400,7 @@ class StreamingConnectClient(Api):
                     async=async,
                     sse=False)
 
-    @set_auth
+    @Authenticate(Api.get_auth)
     def activities(self, params=None, auth=None, async=False):
         """TODO
 
@@ -422,7 +422,7 @@ class StreamingConnectClient(Api):
                     async=async,
                     sse=False)
 
-    @set_auth
+    @Authenticate(Api.get_auth)
     def events(self, params=None, auth=None, async=False):
         """TODO
 
@@ -473,10 +473,18 @@ class StreamingConnectClient(Api):
             return
         self._running = False
 
-        if hasattr(self, '_sse') and self._sse:
+        if self._sse:
+            # We cannot manually trigger a shutdown of the underlying thread,
+            # and due to the implementation of the SSEClient event loop
+            # we cannot quickly discover the call to shutdown and exit
+            # the event loop. In order to shutdown the SSEClient in a timely
+            # manner we forcefully close the connection, in order to trigger
+            # and except within the package. We then catch the exception and
+            # continue the shutdown process.
             self._sse.close()
 
-        if hasattr(self, '_thread') and self._thread:
+        if self._async:
+            # Allow the underlying thread time to shut down gracefully.
             start = time()
             while self._thread.is_alive():
                 if 30 < (time() - start):
@@ -495,6 +503,9 @@ class StreamingConnectClient(Api):
         """
 
         self._running = True
+        self._async = async
+        self._sse = None
+
         if async:
             self._thread = Thread(target=self._run,
                                   args=(path, auth,),
@@ -614,7 +625,6 @@ class StreamingConnectClient(Api):
         :param connection:
         """
 
-        self._sse = None
         try:
             self._sse = SSEClient(connection)
             for event in self._sse.events():
