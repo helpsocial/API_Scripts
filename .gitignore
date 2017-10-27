@@ -1,3 +1,11 @@
+
+# Ignore generated files and dirs
 *~
-*.ini
+*.pyc
 __pycache__
+
+# Ignore hidden files and dirs
+.*
+
+# Ignore configuration files
+*.ini

@@ -4,10 +4,11 @@
 # Copyright (c) 2017 HelpSocial, Inc.
 # See LICENSE for details
 
-import auth
-import json
 import configparser
+
 from sseclient import SSEClient
+
+import auth
 
 parser = configparser.SafeConfigParser()
 

@@ -1,4 +1,2 @@
-sseclient
-configparser
+sseclient-py
 requests
-json
