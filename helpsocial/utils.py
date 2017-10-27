@@ -2,7 +2,10 @@
 # Copyright (c) 2017 HelpSocial, Inc.
 # See LICENSE for details
 
-import json
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 from functools import reduce
 from requests import Timeout

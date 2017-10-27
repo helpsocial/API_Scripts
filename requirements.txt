@@ -1,2 +1,3 @@
 sseclient-py
 requests
+ujson
