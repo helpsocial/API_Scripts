@@ -40,6 +40,24 @@ def data_get(values, key=None, default=None):
     return value
 
 
+def join(sequence, join_char=''):
+    """Implodes a sequence of string into a single string
+
+    :type sequence: iterable
+    :param sequence:
+
+    :type join_char: string
+    :param join_char:
+    """
+    return reduce(lambda x, y: x + join_char + y, sequence)
+
+
+def is_json(request):
+    if 'Content-Type' not in request.headers:
+        return False
+    return request.headers['Content-Type'][:-5] in ['/json', '+json']
+
+
 def print_request(request):
     """Print the details of the request in a human readable
     form to the console.
@@ -48,16 +66,18 @@ def print_request(request):
     :param request: request object to print
     """
 
+    body = '' if not is_json(request) else _format_json(json.loads(request.body), 2, '> ')
+
     print('{}\n> {} {}\n{}\n>\n{}'.format(
             '----------START----------',
             request.method,
             request.url,
             _format_headers(request.headers, '> '),
-            _format_json(json.loads(request.body), 2, '> ')
+            body
     ))
 
 
-def print_response(response, with_body=True):
+def print_response(response, streaming=False):
     """Print the details of the response in a human readable
     form to the console. If the response is streaming the body
     the ``with_body`` flag should be set to False. If not, then
@@ -66,18 +86,19 @@ def print_response(response, with_body=True):
     :type response: requests.Response
     :param response: response object to print
 
-    :type with_body: bool
-    :param with_body: print the response body, this flag SHOULD be set when
-    the initial request is streaming the response.
+    :type streaming: bool
+    :param streaming: Flags if the initial request expects a streamed response.
     """
 
-    body = _format_json(response.json(), 2, '< ') if with_body else None
-    print('< Status: {}\n{}\n<\n{}\n{}'.format(
+    complete = not streaming or not response.ok
+    body = '' if not complete else _format_json(response.json(), 2, '< ')
+    print('< Status: {}\n{}\n<\n{}'.format(
         response.status_code,
         _format_headers(response.headers, '< '),
         body,
-        '----------END----------'
     ))
+    if complete:
+        print('----------END----------')
 
 
 def is_timeout(exc):
@@ -112,6 +133,9 @@ def _format_json(data, indent=None, line_prefix=None):
     :rtype: string
     :return:
     """
+
+    if not data:
+        return ''
 
     if line_prefix is None:
         return json.dumps(data, indent=indent)

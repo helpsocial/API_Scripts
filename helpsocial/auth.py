@@ -23,9 +23,10 @@ class TokenAuth(AuthBase):
     def _authenticate(self, request):
         """Apply the authentication to the request.
 
-        :type request: requests.Request
+        :type request: requests.PreparedRequest
         :param request: the current request instance
-        :rtype requests.Request
+
+        :rtype requests.PreparedRequest
         :return: the authenticated request
         """
 
@@ -34,7 +35,8 @@ class TokenAuth(AuthBase):
 
 class ApplicationAuth(TokenAuth):
     """Add the application authentication headers, ``x-auth-scope`` and
-    ``x-api-key``, to the :class:`requests.Request <requests.Request` object.
+    ``x-api-key``, to the :class:`requests.PreparedRequest <requests.PreparedRequest`
+    object.
     """
 
     def __init__(self, auth_scope, api_key):
@@ -45,7 +47,7 @@ class ApplicationAuth(TokenAuth):
     def _authenticate(self, request):
         """Set the x-auth-token and x-api-key headers on the request.
 
-        :type request: requests.Request
+        :type request: requests.PreparedRequest
         :param request: the current request instance
         """
         request.headers.update({
@@ -67,7 +69,7 @@ class UserAuth(ApplicationAuth):
     def _authenticate(self, request):
         """Set the x-auth-token header on the request.
 
-        :type request: requests.Request
+        :type request: requests.PreparedRequest
         :param request: the current request instance
         """
         super()._authenticate(request)
@@ -83,11 +85,12 @@ class SSEAuth(AuthBase):
     def __call__(self, request):
         """Set the authorization query parameter for the request
 
-        :type request: requests.Request
+        :type request: requests.PreparedRequest
         :param request: the current request instance
-        :rtype requests.Request
+
+        :rtype requests.PreparedRequest
         :return: the authenticated request
         """
-        request.params['authorization'] = self._code
+        request.prepare_url(request.url, {'authorization': self._code})
         return request
 

@@ -12,7 +12,7 @@ class Worker(object):
     """
     def __init__(self, name=None):
         if name is None:
-            name = 'Worker-' + os.urandom().hex()
+            name = 'Worker-' + os.urandom(4).hex()
         self.name = name
 
     def handle(self, item):
@@ -34,4 +34,4 @@ class ConsolePrintWorker(Worker):
     def handle(self, item):
         if not item:
             return
-        print('[{}]\n{}'.format(self.name, json.dumps(item)))
+        print('[{}] {}'.format(self.name, json.dumps(item)))

@@ -1,2 +1,2 @@
-sseclient
+sseclient-py
 requests

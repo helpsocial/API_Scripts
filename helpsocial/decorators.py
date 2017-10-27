@@ -17,7 +17,7 @@ def require_auth(fn):
     return wrapper
 
 
-def authenticate(fn):
+def set_auth(fn):
     """TODO
 
     :param fn:

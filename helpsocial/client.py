@@ -2,18 +2,16 @@
 # Copyright (c) 2017 HelpSocial, Inc.
 # See LICENSE for details
 
-try:
-    import ujson as json
-except ImportError:
-    import json
+import json
 
+# from multiprocessing import Process
 from requests import Request, Session
 from sseclient import SSEClient
 from threading import Thread
-from time import sleep
+from time import sleep, time
 
 from .auth import ApplicationAuth, UserAuth, SSEAuth
-from .decorators import authenticate, require_auth
+from .decorators import set_auth, require_auth
 from .exceptions import ApiException, AuthenticationException, BadRequestException, ForbiddenException
 from .utils import data_get, is_timeout
 
@@ -116,9 +114,9 @@ class Api(object):
         :raises ssl.SSLError:
         """
 
-        uri = self.get_request_uri(path)
+        kwargs = Api._pull_request_kwargs(requests_kwargs)
         return self.__execute(
-            Request('GET', uri, params=params, auth=auth),
+            Request('GET', self.get_request_uri(path), params=params, auth=auth, **kwargs),
             **requests_kwargs
         )
 
@@ -139,9 +137,9 @@ class Api(object):
         :raises ssl.SSLError:
         """
 
-        uri = self.get_request_uri(path)
+        kwargs = Api._pull_request_kwargs(requests_kwargs)
         return self.__execute(
-                Request('PUT', uri, params=params, json=json, auth=auth),
+                Request('PUT', self.get_request_uri(path), params=params, json=json, auth=auth, **kwargs),
                 **requests_kwargs
         )
 
@@ -162,9 +160,9 @@ class Api(object):
         :raises ssl.SSLError:
         """
 
-        uri = self.get_request_uri(path)
+        kwargs = Api._pull_request_kwargs(requests_kwargs)
         return self.__execute(
-                Request('POST', uri, params=params, json=json, auth=auth),
+                Request('POST', self.get_request_uri(path), params=params, json=json, auth=auth, **kwargs),
                 **requests_kwargs
         )
 
@@ -185,9 +183,9 @@ class Api(object):
         :raises ssl.SSLError:
         """
 
-        uri = self.get_request_uri(path)
+        kwargs = Api._pull_request_kwargs(requests_kwargs)
         return self.__execute(
-                Request('DELETE', uri, params=params, json=json, auth=auth),
+                Request('DELETE', self.get_request_uri(path), params=params, json=json, auth=auth, **kwargs),
                 **requests_kwargs
         )
 
@@ -218,6 +216,36 @@ class Api(object):
             return ApplicationAuth(self.auth_scope, self.api_key)
         return UserAuth(self.auth_scope,self.api_key, self.user_token)
 
+    @staticmethod
+    def has_accept_header(headers):
+        """Check if the headers contain an accept header.
+
+        :type headers: dict
+        :param headers:
+        """
+
+        for key in headers.keys():
+            if key.lower() == 'accept':
+                return True
+        return False
+
+    @staticmethod
+    def _pull_request_kwargs(requests_kwargs):
+        """Remove non server request keyword arguments from the arguments list.
+
+        :type requests_kwargs: dict
+        :param requests_kwargs:
+        :return:
+        """
+
+        keys = ['headers', 'files', 'data', 'cookies', 'hooks']
+        kwargs = {}
+        for key in keys:
+            if key in requests_kwargs:
+                kwargs[key] = requests_kwargs[key]
+                del requests_kwargs[key]
+        return kwargs
+
     def __execute(self, request, **requests_kwargs):
         """TODO
 
@@ -229,6 +257,11 @@ class Api(object):
         :raises requests.RequestException:
         :raises ssl.SSLError:
         """
+
+        if 'headers' not in request.headers.keys():
+            request.headers = {'Accept': 'application/json'}
+        elif not Api.has_accept_header(requests_kwargs['headers']):
+            request.headers['Accept'] = 'application/json'
 
         prepared = request.prepare()
         try:
@@ -274,6 +307,25 @@ class RestConnectClient(Api):
 
         return data_get(response.json(), 'data.token')
 
+    @set_auth
+    def get_sse_authorization(self, auth=None):
+        """TODO
+        :type auth: requests.BaseAuth
+        :param auth:
+
+        :rtype: string
+        :return: authorization code
+
+        :raises ApiException:
+        :raises requests.RequestException:
+        :raises ssl.SSLError:
+        """
+
+        return data_get(
+            self.get('streams/sse/authorization', auth=auth).json(),
+            'data.authorization'
+        )
+
 
 class StreamingConnectClient(Api):
     """HelpSocial Connect Api streaming client. Provides convenience methods
@@ -307,6 +359,10 @@ class StreamingConnectClient(Api):
     :param response_hooks: a list of callabke response hooks that should be called after the request completes.
     """
 
+    _sse_stream_headers = {'Accept': 'text/event-stream'}
+
+    _json_stream_headers = {'Accept:' 'application/x-json-stream'}
+
     def __init__(self,
                  auth_scope, api_key, dispatcher,
                  user_token=None,
@@ -320,27 +376,9 @@ class StreamingConnectClient(Api):
         # ensure a dispatcher has been defined
         # for the client
         self._dispatchers = [dispatcher]
-        self.running = False
+        self._running = False
 
-    @authenticate
-    def get_sse_authorization(self, auth=None, user=None):
-        """TODO
-
-        :param user:
-        :param auth:
-        :return:
-        :raises ApiException:
-        :raises requests.RequestException:
-        :raises ssl.SSLError:
-        """
-
-        params = None if user is None else {'user': user}
-        response = self.get('streams/sse/authorization',
-                            params=params,
-                            auth=auth)
-        return data_get(response.json(), 'data.authorization')
-
-    @authenticate
+    @set_auth
     def conversations(self, params=None, auth=None, async=False):
         """TODO
 
@@ -353,15 +391,16 @@ class StreamingConnectClient(Api):
         :raises ssl.SSLError:
         """
 
-        if self.running:
+        if self._running:
             raise RuntimeError('stream already running')
         self._start('streams/conversations',
                     auth,
                     params=params,
+                    headers=self._json_stream_headers,
                     async=async,
                     sse=False)
 
-    @authenticate
+    @set_auth
     def activities(self, params=None, auth=None, async=False):
         """TODO
 
@@ -374,15 +413,16 @@ class StreamingConnectClient(Api):
         :raises ssl.SSLError:
         """
 
-        if self.running:
+        if self._running:
             raise RuntimeError('stream already running')
         self._start('streams/activity',
                     auth,
                     params=params,
+                    headers=self._json_stream_headers,
                     async=async,
                     sse=False)
 
-    @authenticate
+    @set_auth
     def events(self, params=None, auth=None, async=False):
         """TODO
 
@@ -395,11 +435,12 @@ class StreamingConnectClient(Api):
         :raises ssl.SSLError:
         """
 
-        if self.running:
+        if self._running:
             raise RuntimeError('stream already running')
         self._start('streams/activity',
                     auth,
                     params=params,
+                    headers=self._json_stream_headers,
                     async=async,
                     sse=False)
 
@@ -415,15 +456,34 @@ class StreamingConnectClient(Api):
         :raises ssl.SSLError:
         """
 
-        if self.running:
+        if self._running:
             raise RuntimeError('stream already running')
         self._start('streams/sse',
                     SSEAuth(authorization),
                     params=params,
+                    headers=self._sse_stream_headers,
                     async=async,
                     sse=True)
 
-    def _start(self, path, auth, params=None, async=False, sse=False):
+    def is_alive(self):
+        return self._running
+
+    def shutdown(self):
+        if not self._running:
+            return
+        self._running = False
+
+        if hasattr(self, '_sse') and self._sse:
+            self._sse.close()
+
+        if hasattr(self, '_thread') and self._thread:
+            start = time()
+            while self._thread.is_alive():
+                if 30 < (time() - start):
+                    break
+                sleep(1)
+
+    def _start(self, path, auth, params=None, headers=None, async=False, sse=False):
         """TODO
 
         :param path:
@@ -434,16 +494,16 @@ class StreamingConnectClient(Api):
         :return:
         """
 
-        self.running = True
+        self._running = True
         if async:
             self._thread = Thread(target=self._run,
                                   args=(path, auth,),
-                                  kwargs={'params': params, 'sse': sse})
+                                  kwargs={'headers': headers, 'params': params, 'sse': sse})
             self._thread.start()
         else:
             self._run(path, auth, params=params, sse=sse)
 
-    def _run(self, path, auth, params=None, sse=False):
+    def _run(self, path, auth, params=None, headers=None, sse=False):
         """Run the desired stream.
 
         :type path: string
@@ -465,9 +525,9 @@ class StreamingConnectClient(Api):
         backoff_limit_seconds = 300
 
         try:
-            while self.running:
+            while self._running:
                 try:
-                    connection = self._open_stream(path, auth, params=params)
+                    connection = self._open_stream(path, auth, params=params, headers=headers)
                     initial_connection = False
                     disconnect_counter = 0
                 except (AuthenticationException,
@@ -477,6 +537,9 @@ class StreamingConnectClient(Api):
                     # is no way that we will be able to make the
                     # connection making the request as is.
                     raise ex
+                except KeyboardInterrupt:
+                    # User terminated console app
+                    break
                 except Exception as ex:
                     if initial_connection:
                         # The initial attempt to connect to stream
@@ -486,13 +549,13 @@ class StreamingConnectClient(Api):
                     # and we should attempt to reconnect. We apply
                     # an exponential back off to not overload the
                     # server and allow it time to heal.
-                    if not self.running:
+                    if not self._running:
                         break
                     disconnect_counter += 1
                     sleep(min(2 ** disconnect_counter, backoff_limit_seconds))
                     continue
 
-                if not self.running:
+                if not self._running:
                     break
 
                 try:
@@ -500,6 +563,9 @@ class StreamingConnectClient(Api):
                         self._stream_sse(connection)
                     else:
                         self._stream_json(connection)
+                except KeyboardInterrupt:
+                    # User terminated console app
+                    break
                 except Exception as ex:
                     if not is_timeout(ex):
                         # a fatal exception has occurred
@@ -510,11 +576,11 @@ class StreamingConnectClient(Api):
             # clean up the allocated connection object
             # and make sure we've flagged that we're no longer
             # running
-            self.running = False
+            self._running = False
             if connection:
                 connection.close()
 
-    def _open_stream(self, path, auth, params=None):
+    def _open_stream(self, path, auth, params=None, headers=None):
         """Open the streaming connection.
 
         :type path: string
@@ -531,7 +597,7 @@ class StreamingConnectClient(Api):
         :raises ApiException:
         """
 
-        response = self.get(path, params, auth, stream=True)
+        response = self.get(path, params=params, auth=auth, stream=True, headers=headers)
         if response.status_code != 200:
             errors = data_get(response.json(), 'data.errors')
             status = response.status_code
@@ -548,10 +614,23 @@ class StreamingConnectClient(Api):
         :param connection:
         """
 
-        for event in SSEClient(connection):
-            if not self.running:
-                break
-            self._dispatch(event)
+        self._sse = None
+        try:
+            self._sse = SSEClient(connection)
+            for event in self._sse.events():
+                if not self._running:
+                    break
+                self._dispatch(event.data)
+        except AttributeError as exc:
+            # if not running then we caused the except by closing the
+            # underlying http connection. The SSEClient event looping
+            # does not allow for arbitrary closures between any read, since
+            # an event is only yielded when data is received.
+            if self._running:
+                raise exc
+        finally:
+            if self._sse:
+                self._sse.close()
 
     def _stream_json(self, connection):
         """Handle (parse) a stream of newline delimited json objects.
@@ -561,7 +640,7 @@ class StreamingConnectClient(Api):
         """
 
         for line in connection.iter_lines(decode_unicode=True):
-            if not self.running:
+            if not self._running:
                 break
             self._dispatch(line)
             decoded = json.loads(line)
