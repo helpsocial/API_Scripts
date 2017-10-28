@@ -133,12 +133,21 @@ class Api(object):
     def get(self, path, params=None, auth=None, **requests_kwargs):
         """Perform a Http GET request on the api at the specified path.
 
+        :type path: string
         :param path:
+
+        :type params: dict
         :param params:
+
+        :type auth: requests.AuthBase
         :param auth:
+
+        :type requests_kwargs: dict
         :param requests_kwargs:
+
         :rtype: requests.Response
         :return: :class:`Response <Response>` object
+
         :raises ApiException:
         :raises requests.RequestException:
         :raises ssl.SSLError:
@@ -155,13 +164,24 @@ class Api(object):
             auth=None, **requests_kwargs):
         """Perform a Http PUT request on the api at the specified path.
 
+        :type path: string
         :param path:
+
+        :type params: dict
         :param params:
+
+        :type json: dict
         :param json:
+
+        :type auth: requests.AuthBase
         :param auth:
+
+        :type requests_kwargs: dict
         :param requests_kwargs:
+
         :rtype: requests.Response
         :return: :class:`Response <Response>` object
+
         :raises ApiException:
         :raises requests.RequestException:
         :raises ssl.SSLError:
@@ -178,13 +198,24 @@ class Api(object):
              auth=None, **requests_kwargs):
         """Perform a Http POST request on the api at the specified path.
 
+        :type path: string
         :param path:
+
+        :type params: dict
         :param params:
+
+        :type json: dict
         :param json:
+
+        :type auth: requests.AuthBase
         :param auth:
+
+        :type requests_kwargs: dict
         :param requests_kwargs:
+
         :rtype: requests.Response
         :return: :class:`Response <Response>` object
+
         :raises ApiException:
         :raises requests.RequestException:
         :raises ssl.SSLError:
@@ -201,13 +232,24 @@ class Api(object):
                auth=None, **requests_kwargs):
         """Perform a Http DELETE request on the api at the specified path.
 
+        :type path: string
         :param path:
+
+        :type params: dict
         :param params:
+
+        :type json: dict
         :param json:
+
+        :type auth: requests.AuthBase
         :param auth:
+
+        :type requests_kwargs: dict
         :param requests_kwargs:
+
         :rtype: requests.Response
         :return: :class:`Response <Response>` object
+
         :raises ApiException:
         :raises requests.RequestException:
         :raises ssl.SSLError:
@@ -220,10 +262,14 @@ class Api(object):
         )
 
     def get_request_uri(self, path):
-        """TODO
+        """Retrieve the full url for the api request using the ``path``.
 
-        :param path:
-        :return string:
+        :type path: string
+        :param path: resource path
+
+        :rtype: string
+        :return: the full url
+
         :raises ApiException:
         """
 
@@ -236,10 +282,10 @@ class Api(object):
         )
 
     def get_auth(self):
-        """TODO
+        """Auth factory for the client.
 
-        :return: :class:`BaseAuth <BaseAuth>` object
-        :rtype: requests.BaseAuth
+        :rtype: requests.AuthBase
+        :return: :class:`AuthBase <AuthBase>` object
         """
 
         if self.user_token is None:
@@ -252,6 +298,9 @@ class Api(object):
 
         :type headers: dict
         :param headers:
+
+        :rtype: bool
+        :return:
         """
 
         for key in headers.keys():
@@ -265,7 +314,9 @@ class Api(object):
 
         :type requests_kwargs: dict
         :param requests_kwargs:
-        :return:
+
+        :rtype: dict
+        :return: the keyword arguments for a request instance
         """
 
         keys = ['headers', 'files', 'data', 'cookies', 'hooks']
@@ -276,13 +327,19 @@ class Api(object):
                 del requests_kwargs[key]
         return kwargs
 
-    def __execute(self, request, **requests_kwargs):
-        """TODO
+    def __execute(self, request, **transport_kwargs):
+        """Wrap the requests module send method in order to call
+        any request (response) hooks defined.
 
-        :param request:
-        :param requests_kwargs:
-        :return: :class:`Response <Response>` object
+        :type request: requests.Request
+        :param request: :class:`requests.Request <requests.Request>` instance.
+
+        :type transport_kwargs: dict
+        :param transport_kwargs: keyword arguments for the transport layer
+
         :rtype: requests.Response
+        :return: :class:`Response <Response>` object
+
         :raises ApiException:
         :raises requests.RequestException:
         :raises ssl.SSLError:
@@ -290,14 +347,14 @@ class Api(object):
 
         if 'headers' not in request.headers.keys():
             request.headers = {'Accept': 'application/json'}
-        elif not Api.has_accept_header(requests_kwargs['headers']):
+        elif not Api.has_accept_header(transport_kwargs['headers']):
             request.headers['Accept'] = 'application/json'
 
         prepared = request.prepare()
         for hook in self._request_hooks:
             hook(prepared)
 
-        response = self._http.send(prepared, **requests_kwargs)
+        response = self._http.send(prepared, **transport_kwargs)
         for hook in self._response_hooks:
             hook(prepared, response)
 
@@ -313,12 +370,17 @@ class RestConnectClient(Api):
     """
 
     def authenticate(self, username, password):
-        """TODO
+        """Authenticate the user.
 
-        :param username:
-        :param password:
-        :return:
+        :type username: string
+        :param username: the user's username
+
+        :type password: string
+        :param password: the user's password
+
         :rtype: dict
+        :return: the token object
+
         :raises ApiException:
         :raises requests.RequestException:
         :raises ssl.SSLError:
@@ -336,12 +398,13 @@ class RestConnectClient(Api):
 
     @Authenticate(Api.get_auth)
     def get_sse_authorization(self, auth=None):
-        """TODO
-        :type auth: requests.BaseAuth
-        :param auth:
+        """Retrieve an SSE authorization token for the authenticated user.
+
+        :type auth: auth.UserAuth
+        :param auth: :class:`auth.UserAuth <auth.UserAuth>` object
 
         :rtype: string
-        :return: authorization code
+        :return: the authorization code
 
         :raises ApiException:
         :raises requests.RequestException:
@@ -425,7 +488,7 @@ class StreamingConnectClient(Api):
         :type params: dict
         :param params: request parameters
 
-        :type auth: requests.AuthBase
+        :type auth: auth.TokenAuth
         :param auth: request authentication method
 
         :raises ApiException:
@@ -452,7 +515,7 @@ class StreamingConnectClient(Api):
         :type params: dict
         :param params: request parameters
 
-        :type auth: requests.AuthBase
+        :type auth: auth.TokenAuth
         :param auth: request authentication method
 
         :raises ApiException:
@@ -479,7 +542,7 @@ class StreamingConnectClient(Api):
         :type params: dict
         :param params: request parameters
 
-        :type auth: requests.AuthBase
+        :type auth: auth.TokenAuth
         :param auth: request authentication method
 
         :raises ApiException:
