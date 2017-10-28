@@ -2,18 +2,22 @@
 # Copyright (c) 2017 HelpSocial, Inc.
 # See LICENSE for details
 
-import json
+try:
+    import ujson as json
+except ImportError:
+    import json
 
-# from multiprocessing import Process
 from requests import Request, Session
 from sseclient import SSEClient
 from threading import Thread
 from time import sleep, time
 
 from .auth import ApplicationAuth, UserAuth, SSEAuth
-from .decorators import set_auth, require_auth, Authenticate
-from .exceptions import ApiException, AuthenticationException, BadRequestException, ForbiddenException
-from .utils import data_get, is_timeout
+from .decorators import require_auth, Authenticate
+from .exceptions import ApiException, AuthenticationException, \
+                        BadRequestException, ForbiddenException, \
+                        NotFoundException
+from .utils import data_get, is_timeout, join
 
 API_HOST = 'api.helpsocial.com'
 API_VERSION = '2.0'
@@ -74,6 +78,32 @@ class Api(object):
         self._request_hooks = request_hooks
         self._response_hooks = response_hooks
 
+    @staticmethod
+    def process_params(params, csv_keys=None):
+        """Filter the params keyword argument passed to the function.
+
+        :type params dict
+        :param params:
+
+        :type csv_keys: list
+        :param csv_keys:
+
+        :rtype: dict
+        :return: the filtered parameters
+        """
+        if params is None:
+            return None
+
+        csv_keys = [] if csv_keys is None else csv_keys
+        filtered = params.copy()
+
+        for (key, value) in params.items():
+            if value is None:
+                del filtered[key]
+            elif key in csv_keys:
+                filtered[key] = join(value, ',') if type(value) is list else str(value)
+        return filtered
+
     def set_user_token(self, token):
         """Set the default user token for the client."""
 
@@ -103,12 +133,21 @@ class Api(object):
     def get(self, path, params=None, auth=None, **requests_kwargs):
         """Perform a Http GET request on the api at the specified path.
 
+        :type path: string
         :param path:
+
+        :type params: dict
         :param params:
+
+        :type auth: requests.AuthBase
         :param auth:
+
+        :type requests_kwargs: dict
         :param requests_kwargs:
+
         :rtype: requests.Response
         :return: :class:`Response <Response>` object
+
         :raises ApiException:
         :raises requests.RequestException:
         :raises ssl.SSLError:
@@ -125,13 +164,24 @@ class Api(object):
             auth=None, **requests_kwargs):
         """Perform a Http PUT request on the api at the specified path.
 
+        :type path: string
         :param path:
+
+        :type params: dict
         :param params:
+
+        :type json: dict
         :param json:
+
+        :type auth: requests.AuthBase
         :param auth:
+
+        :type requests_kwargs: dict
         :param requests_kwargs:
+
         :rtype: requests.Response
         :return: :class:`Response <Response>` object
+
         :raises ApiException:
         :raises requests.RequestException:
         :raises ssl.SSLError:
@@ -148,13 +198,24 @@ class Api(object):
              auth=None, **requests_kwargs):
         """Perform a Http POST request on the api at the specified path.
 
+        :type path: string
         :param path:
+
+        :type params: dict
         :param params:
+
+        :type json: dict
         :param json:
+
+        :type auth: requests.AuthBase
         :param auth:
+
+        :type requests_kwargs: dict
         :param requests_kwargs:
+
         :rtype: requests.Response
         :return: :class:`Response <Response>` object
+
         :raises ApiException:
         :raises requests.RequestException:
         :raises ssl.SSLError:
@@ -171,13 +232,24 @@ class Api(object):
                auth=None, **requests_kwargs):
         """Perform a Http DELETE request on the api at the specified path.
 
+        :type path: string
         :param path:
+
+        :type params: dict
         :param params:
+
+        :type json: dict
         :param json:
+
+        :type auth: requests.AuthBase
         :param auth:
+
+        :type requests_kwargs: dict
         :param requests_kwargs:
+
         :rtype: requests.Response
         :return: :class:`Response <Response>` object
+
         :raises ApiException:
         :raises requests.RequestException:
         :raises ssl.SSLError:
@@ -190,10 +262,14 @@ class Api(object):
         )
 
     def get_request_uri(self, path):
-        """TODO
+        """Retrieve the full url for the api request using the ``path``.
 
-        :param path:
-        :return string:
+        :type path: string
+        :param path: resource path
+
+        :rtype: string
+        :return: the full url
+
         :raises ApiException:
         """
 
@@ -206,10 +282,10 @@ class Api(object):
         )
 
     def get_auth(self):
-        """TODO
+        """Auth factory for the client.
 
-        :return: :class:`BaseAuth <BaseAuth>` object
-        :rtype: requests.BaseAuth
+        :rtype: requests.AuthBase
+        :return: :class:`AuthBase <AuthBase>` object
         """
 
         if self.user_token is None:
@@ -222,6 +298,9 @@ class Api(object):
 
         :type headers: dict
         :param headers:
+
+        :rtype: bool
+        :return:
         """
 
         for key in headers.keys():
@@ -235,7 +314,9 @@ class Api(object):
 
         :type requests_kwargs: dict
         :param requests_kwargs:
-        :return:
+
+        :rtype: dict
+        :return: the keyword arguments for a request instance
         """
 
         keys = ['headers', 'files', 'data', 'cookies', 'hooks']
@@ -246,13 +327,19 @@ class Api(object):
                 del requests_kwargs[key]
         return kwargs
 
-    def __execute(self, request, **requests_kwargs):
-        """TODO
+    def __execute(self, request, **transport_kwargs):
+        """Wrap the requests module send method in order to call
+        any request (response) hooks defined.
 
-        :param request:
-        :param requests_kwargs:
-        :return: :class:`Response <Response>` object
+        :type request: requests.Request
+        :param request: :class:`requests.Request <requests.Request>` instance.
+
+        :type transport_kwargs: dict
+        :param transport_kwargs: keyword arguments for the transport layer
+
         :rtype: requests.Response
+        :return: :class:`Response <Response>` object
+
         :raises ApiException:
         :raises requests.RequestException:
         :raises ssl.SSLError:
@@ -260,23 +347,20 @@ class Api(object):
 
         if 'headers' not in request.headers.keys():
             request.headers = {'Accept': 'application/json'}
-        elif not Api.has_accept_header(requests_kwargs['headers']):
+        elif not Api.has_accept_header(transport_kwargs['headers']):
             request.headers['Accept'] = 'application/json'
 
         prepared = request.prepare()
-        try:
-            for hook in self._request_hooks:
-                hook(prepared)
-        finally:
-            response = self._http.send(prepared, **requests_kwargs)
+        for hook in self._request_hooks:
+            hook(prepared)
 
-        try:
-            for hook in self._response_hooks:
-                hook(prepared, response)
-        finally:
-            if response.status_code >= 400:
-                raise ApiException.make(response)
-            return response
+        response = self._http.send(prepared, **transport_kwargs)
+        for hook in self._response_hooks:
+            hook(prepared, response)
+
+        if response.status_code >= 400:
+            raise ApiException.make(response)
+        return response
 
 
 class RestConnectClient(Api):
@@ -286,12 +370,17 @@ class RestConnectClient(Api):
     """
 
     def authenticate(self, username, password):
-        """TODO
+        """Authenticate the user.
 
-        :param username:
-        :param password:
-        :return:
+        :type username: string
+        :param username: the user's username
+
+        :type password: string
+        :param password: the user's password
+
         :rtype: dict
+        :return: the token object
+
         :raises ApiException:
         :raises requests.RequestException:
         :raises ssl.SSLError:
@@ -309,12 +398,13 @@ class RestConnectClient(Api):
 
     @Authenticate(Api.get_auth)
     def get_sse_authorization(self, auth=None):
-        """TODO
-        :type auth: requests.BaseAuth
-        :param auth:
+        """Retrieve an SSE authorization token for the authenticated user.
+
+        :type auth: auth.UserAuth
+        :param auth: :class:`auth.UserAuth <auth.UserAuth>` object
 
         :rtype: string
-        :return: authorization code
+        :return: the authorization code
 
         :raises ApiException:
         :raises requests.RequestException:
@@ -356,12 +446,12 @@ class StreamingConnectClient(Api):
     :param request_hooks: a list of callable request hooks that should be called before the request executes.
 
     :type response_hooks: list
-    :param response_hooks: a list of callabke response hooks that should be called after the request completes.
+    :param response_hooks: a list of callable response hooks that should be called after the request completes.
     """
 
     _sse_stream_headers = {'Accept': 'text/event-stream'}
 
-    _json_stream_headers = {'Accept:' 'application/x-json-stream'}
+    _json_stream_headers = {'Accept': 'application/x-json-stream'}
 
     def __init__(self,
                  auth_scope, api_key, dispatcher,
@@ -378,14 +468,29 @@ class StreamingConnectClient(Api):
         self._dispatchers = [dispatcher]
         self._running = False
 
+    @staticmethod
+    def stream_complete(data):
+        """Check if a bounded stream is complete."""
+
+        try:
+            return 'complete' in json.loads(data)
+        except json.decoder.JSONDecodeError:
+            pass
+        return False
+
     @Authenticate(Api.get_auth)
     def conversations(self, params=None, auth=None, async=False):
-        """TODO
+        """Stream conversation json.
 
-        :param async:
-        :param params:
-        :param auth:
-        :return:
+        :type async:
+        :param async: run request asynchronously
+
+        :type params: dict
+        :param params: request parameters
+
+        :type auth: auth.TokenAuth
+        :param auth: request authentication method
+
         :raises ApiException:
         :raises requests.RequestException:
         :raises ssl.SSLError:
@@ -393,21 +498,26 @@ class StreamingConnectClient(Api):
 
         if self._running:
             raise RuntimeError('stream already running')
-        self._start('streams/conversations',
+        self._start('streams/conversation',
                     auth,
-                    params=params,
+                    params=Api.process_params(params),
                     headers=self._json_stream_headers,
                     async=async,
                     sse=False)
 
     @Authenticate(Api.get_auth)
     def activities(self, params=None, auth=None, async=False):
-        """TODO
+        """Stream activity json.
 
-        :param async:
-        :param params:
-        :param auth:
-        :return:
+        :type async:
+        :param async: run request asynchronously
+
+        :type params: dict
+        :param params: request parameters
+
+        :type auth: auth.TokenAuth
+        :param auth: request authentication method
+
         :raises ApiException:
         :raises requests.RequestException:
         :raises ssl.SSLError:
@@ -417,19 +527,24 @@ class StreamingConnectClient(Api):
             raise RuntimeError('stream already running')
         self._start('streams/activity',
                     auth,
-                    params=params,
+                    params=Api.process_params(params),
                     headers=self._json_stream_headers,
                     async=async,
                     sse=False)
 
     @Authenticate(Api.get_auth)
     def events(self, params=None, auth=None, async=False):
-        """TODO
+        """Stream event json.
 
-        :param async:
-        :param params:
-        :param auth:
-        :return:
+        :type async:
+        :param async: run request asynchronously
+
+        :type params: dict
+        :param params: request parameters
+
+        :type auth: auth.TokenAuth
+        :param auth: request authentication method
+
         :raises ApiException:
         :raises requests.RequestException:
         :raises ssl.SSLError:
@@ -437,20 +552,25 @@ class StreamingConnectClient(Api):
 
         if self._running:
             raise RuntimeError('stream already running')
-        self._start('streams/activity',
+        self._start('streams/event',
                     auth,
-                    params=params,
+                    params=Api.process_params(params, csv_keys=['event_types']),
                     headers=self._json_stream_headers,
                     async=async,
                     sse=False)
 
     def sse(self, authorization, params=None, async=False):
-        """TODO
+        """Stream server sent events.
 
-        :param async:
-        :param authorization:
+        :type async: bool
+        :param async: run request asynchronously
+
+        :type authorization: string
+        :param authorization: sse stream authorization code
+
+        :type params: dict
         :param params:
-        :return:
+
         :raises ApiException:
         :raises requests.RequestException:
         :raises ssl.SSLError:
@@ -460,15 +580,19 @@ class StreamingConnectClient(Api):
             raise RuntimeError('stream already running')
         self._start('streams/sse',
                     SSEAuth(authorization),
-                    params=params,
+                    params=Api.process_params(params, csv_keys=['event_types']),
                     headers=self._sse_stream_headers,
                     async=async,
                     sse=True)
 
     def is_alive(self):
+        """Check if the stream is alive."""
+
         return self._running
 
     def shutdown(self):
+        """Shutdown the running stream."""
+
         if not self._running:
             return
         self._running = False
@@ -492,14 +616,22 @@ class StreamingConnectClient(Api):
                 sleep(1)
 
     def _start(self, path, auth, params=None, headers=None, async=False, sse=False):
-        """TODO
+        """Start the stream on a new thread if asynchronous.
 
-        :param path:
-        :param auth:
-        :param params:
-        :param async:
-        :param sse:
-        :return:
+        :type path: string
+        :param path: streaming resource path
+
+        :type auth: requests.AuthBase
+        :param auth: request authentication method
+
+        :type params: dict
+        :param params: request parameters
+
+        :type async: bool
+        :param async: run request asynchronously
+
+        :type sse: bool
+        :param sse: is this a stream of server sent events
         """
 
         self._running = True
@@ -521,7 +653,7 @@ class StreamingConnectClient(Api):
         :param path: the path to the streaming resource.
 
         :type auth: requests.AuthBase
-        :param auth: the authentication required for the streaming resource.
+        :param auth: request authentication method
 
         :type params: dict
         :param params: request parameters
@@ -543,7 +675,8 @@ class StreamingConnectClient(Api):
                     disconnect_counter = 0
                 except (AuthenticationException,
                         ForbiddenException,
-                        BadRequestException) as ex:
+                        BadRequestException,
+                        NotFoundException) as ex:
                     # If we encounter any of these exceptions there
                     # is no way that we will be able to make the
                     # connection making the request as is.
@@ -609,10 +742,6 @@ class StreamingConnectClient(Api):
         """
 
         response = self.get(path, params=params, auth=auth, stream=True, headers=headers)
-        if response.status_code != 200:
-            errors = data_get(response.json(), 'data.errors')
-            status = response.status_code
-            raise ApiException('Failed to start stream', status, errors)
 
         if response.encoding is None:
             response.encoding = 'utf-8'
@@ -630,7 +759,7 @@ class StreamingConnectClient(Api):
             for event in self._sse.events():
                 if not self._running:
                     break
-                self._dispatch(event.data)
+                self._dispatch(json.loads(event.data))
         except AttributeError as exc:
             # if not running then we caused the except by closing the
             # underlying http connection. The SSEClient event looping
@@ -652,10 +781,13 @@ class StreamingConnectClient(Api):
         for line in connection.iter_lines(decode_unicode=True):
             if not self._running:
                 break
-            self._dispatch(line)
+            if not line:
+                continue
             decoded = json.loads(line)
-            if 'complete' in decoded:
-                # The bounded stream has completed
+            self._dispatch(decoded)
+
+            if StreamingConnectClient.stream_complete(line):
+                self._running = False
                 break
 
     def _dispatch(self, data):

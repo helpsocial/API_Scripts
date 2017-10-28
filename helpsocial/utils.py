@@ -2,7 +2,10 @@
 # Copyright (c) 2017 HelpSocial, Inc.
 # See LICENSE for details
 
-import json
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 from functools import reduce
 from requests import Timeout
@@ -52,10 +55,15 @@ def join(sequence, join_char=''):
     return reduce(lambda x, y: x + join_char + y, sequence)
 
 
-def is_json(request):
-    if 'Content-Type' not in request.headers:
+def is_json(http_entity):
+    """Verify the request or response content type is json.
+
+    :param http_entity: request to verify content type
+    :return:
+    """
+    if 'Content-Type' not in http_entity.headers:
         return False
-    return request.headers['Content-Type'][:-5] in ['/json', '+json']
+    return http_entity.headers['Content-Type'][:-5] in ['/json', '+json']
 
 
 def print_request(request):
@@ -79,9 +87,9 @@ def print_request(request):
 
 def print_response(response, streaming=False):
     """Print the details of the response in a human readable
-    form to the console. If the response is streaming the body
-    the ``with_body`` flag should be set to False. If not, then
-    this call will block until the entire response body is read.
+    form to the console. If this is called on a streaming
+    response body and the flag is not set, this call will block
+    until the entire response is available.
 
     :type response: requests.Response
     :param response: response object to print
@@ -122,13 +130,13 @@ def _format_json(data, indent=None, line_prefix=None):
     """Format the json data applying a prefix to each line if defined.
 
     :type data: dict
-    :param data:
+    :param data: data to serialize as json
 
     :type indent: int
-    :param indent:
+    :param indent: json pretty print indent size
 
     :type line_prefix: string
-    :param line_prefix:
+    :param line_prefix: prefix for each printed line
 
     :rtype: string
     :return:
@@ -149,10 +157,10 @@ def _format_headers(headers, line_prefix=None):
     """Create a human readable formatted string of headers.
 
     :type headers: dict
-    :param headers:
+    :param headers: request headers
 
     :type line_prefix: string
-    :param line_prefix:
+    :param line_prefix: prefix for each printed line
 
     :rtype: string
     :return:

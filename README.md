@@ -29,7 +29,6 @@ client.get('<path>')
 client.post('<path>')
 client.put('<path>')
 client.delete('<path>')
-
 ```
 
 ## With User
@@ -45,16 +44,58 @@ client.get('<path>')
 client.post('<path>')
 client.put('<path>')
 client.delete('<path>')
-
 ```
 
 For advanced usage see the `examples/` directory.
 
-### Examples
-
+## Examples
 
 | Name | Description |
 | ---- | ----------- |
-| auth.py | Performs the steps to necessary to authenticate a user. |
-| ssestream.py | Script to open a connection to the HelpSocial API SSE endpoint. |
+| auth.py | Authenticates a user. |
+| stream.py | Open realtime and historical stream. Available streams: sse, activities, conversations, events  |
 | get_profiles.py | Script to retrieve available network profiles for the authenticated user. |
+
+### User Auth
+
+*file:** auth.py
+**usage:**
+```bash
+python3 auth.py USERNAME
+```
+
+### SSE Stream
+
+**file:** stream.py
+**usage:**
+```bash
+python3 stream.py sse
+```
+
+### Activity Stream
+
+**file:** stream.py
+**usage:**
+```bash
+python3 stream.py activities
+python3 stream.py activities bounded 20171024T140000  20171024T200000
+```
+
+### Conversation Stream
+
+**file:** stream.py
+**usage:**
+```bash
+python3 stream.py conversations
+python3 stream.py conversations bounded 20171024T140000  20171024T200000
+```
+
+### Event Stream
+
+**file:** stream.py
+**usage:**
+```bash
+python3 stream.py events
+python3 stream.py events bounded 20171024T140000  20171024T200000
+```
+
