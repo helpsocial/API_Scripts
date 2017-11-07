@@ -101,13 +101,23 @@ class Api(object):
             if value is None:
                 del filtered[key]
             elif key in csv_keys:
-                filtered[key] = join(value, ',') if type(value) is list else str(value)
+                filtered[key] = join(value, ',') if isinstance(value, list) else str(value)
+            elif isinstance(value, bool):
+                filtered[key] = int(value)
         return filtered
 
     def set_user_token(self, token):
         """Set the default user token for the client."""
 
         self.user_token = token
+
+    def get_user_token(self):
+        """
+
+        :rtype: string
+        :return:
+        """
+        return self.user_token
 
     def register_event_hook(self, event, hook):
         """Register a new event hook.
@@ -142,9 +152,6 @@ class Api(object):
         :type auth: requests.AuthBase
         :param auth:
 
-        :type requests_kwargs: dict
-        :param requests_kwargs:
-
         :rtype: requests.Response
         :return: :class:`Response <Response>` object
 
@@ -175,9 +182,6 @@ class Api(object):
 
         :type auth: requests.AuthBase
         :param auth:
-
-        :type requests_kwargs: dict
-        :param requests_kwargs:
 
         :rtype: requests.Response
         :return: :class:`Response <Response>` object
@@ -210,9 +214,6 @@ class Api(object):
         :type auth: requests.AuthBase
         :param auth:
 
-        :type requests_kwargs: dict
-        :param requests_kwargs:
-
         :rtype: requests.Response
         :return: :class:`Response <Response>` object
 
@@ -243,9 +244,6 @@ class Api(object):
 
         :type auth: requests.AuthBase
         :param auth:
-
-        :type requests_kwargs: dict
-        :param requests_kwargs:
 
         :rtype: requests.Response
         :return: :class:`Response <Response>` object
@@ -354,11 +352,15 @@ class Api(object):
         for hook in self._request_hooks:
             hook(prepared)
 
+        http_error_exception = not transport_kwargs.get('http_errors', False)
+        if 'http_errors' in transport_kwargs:
+            del transport_kwargs['http_errors']
+
         response = self._http.send(prepared, **transport_kwargs)
         for hook in self._response_hooks:
             hook(prepared, response)
 
-        if response.status_code >= 400:
+        if response.status_code >= 400 and http_error_exception:
             raise ApiException.make(response)
         return response
 
@@ -395,6 +397,18 @@ class RestConnectClient(Api):
         response = self.post('tokens', json=body, auth=auth)
 
         return data_get(response.json(), 'data.token')
+
+    @Authenticate(Api.get_auth)
+    def list_profiles(self, auth=None, managed=None, limit=25):
+        query = {
+            'managed': managed,
+            'limit': limit
+        }
+
+        response = self.get('network_profiles',
+                            params=self.process_params(query),
+                            auth=auth)
+        return data_get(response.json(), 'data.accounts')
 
     @Authenticate(Api.get_auth)
     def get_sse_authorization(self, auth=None):

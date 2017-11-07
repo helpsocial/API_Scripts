@@ -60,11 +60,21 @@ class UserAuth(ApplicationAuth):
     """Add the user authentication header, ``x-auth-token``, to the
     :class:`requests.Request <requests.Request` object in addition to
     the application authentication headers.
+
+    :param auth_scope:
+    :param api_key:
+    :param user_token:
     """
 
     def __init__(self, auth_scope, api_key, user_token):
         super().__init__(auth_scope, api_key)
         self._user_token = user_token
+
+    @property
+    def user_token(self):
+        if callable(self._user_token):
+            return self._user_token()
+        return self._user_token
 
     def _authenticate(self, request):
         """Set the x-auth-token header on the request.
@@ -73,7 +83,9 @@ class UserAuth(ApplicationAuth):
         :param request: the current request instance
         """
         super()._authenticate(request)
-        request.headers['x-auth-token'] = self._user_token
+        token = self.user_token
+        if token is not None:
+            request.headers['x-auth-token'] = token
 
 
 class SSEAuth(AuthBase):

@@ -394,10 +394,8 @@ class Command(object):
 
         parser.add_argument('--config',
                             dest='config_path',
-                            help='Path to json configuration file.',
-                            default=path_join(dirname(abspath(__file__)),
-                                              '.config.json')
-                            )
+                            help='Path to configuration file.',
+                            default=path_join(dirname(abspath(__file__)), '.config.json'))
 
     @staticmethod
     def _add_default_stream_opts(parser):
