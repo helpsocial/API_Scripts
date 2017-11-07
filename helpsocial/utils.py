@@ -63,7 +63,7 @@ def is_json(http_entity):
     """
     if 'Content-Type' not in http_entity.headers:
         return False
-    return http_entity.headers['Content-Type'][:-5] in ['/json', '+json']
+    return http_entity.headers['Content-Type'][-5:] in ['/json', '+json']
 
 
 def print_request(request):
@@ -150,7 +150,8 @@ def _format_json(data, indent=None, line_prefix=None):
 
     return '\n'.join('{}{}'.format(line_prefix, line)
                      for line
-                     in json.dumps(data, indent=indent).splitlines())
+                     in json.dumps(data, indent=indent).splitlines()
+                     if line)
 
 
 def _format_headers(headers, line_prefix=None):

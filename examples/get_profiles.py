@@ -1,43 +1,74 @@
 #!/usr/bin/env python3
 
-# Initial Author: Robert Collazo <rob@helpsocial.com>
+# Author: Robert Collazo <rob@helpsocial.com>
 # Copyright (c) 2017 HelpSocial, Inc.
 # See LICENSE for details
 
 import configparser
-import json
+import os
+import sys
 
-import requests
+try:
+    import ujson as json
+except ImportError:
+    import json
 
-import auth
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-parser = configparser.SafeConfigParser()
+from helpsocial import RestConnectClient
+from helpsocial.hooks import RequestPrinter
+from helpsocial.utils import data_get
 
-if not parser.read('config.ini'):
-    print("File 'config.ini' seems to not exist.")
+
+config_path = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    '.config.ini'
+)
+
+if not os.path.exists(config_path):
+    print("File '.config.ini' seems to not exist.")
     exit(-1)
 
-username = parser.get('account', 'username')
-password = parser.get('account', 'password')
+parser = configparser.ConfigParser()
+if not parser.read(config_path):
+    print('Failed to read config file.')
+    exit(-1)
 
-scope = parser.get('account', 'scope')
-key = parser.get('account', 'key')
+client = RestConnectClient(
+    parser.get('account', 'scope'),
+    parser.get('account', 'key'),
+    request_hooks=[RequestPrinter()]
+)
 
-headers = auth.auth(username, password, key, scope)
-url = auth.base_url()
+if parser.get('account', 'user_token', fallback=None) is not None:
+    client.set_user_token(parser.get('account', 'user_token'))
+else:
+    username = parser.get('account', 'username')
+    password = parser.get('account', 'password')
+    user_token = data_get(client.authenticate(username, password), 'value')
+    client.set_user_token(user_token)
 
-response = requests.get(url + "/2.0/network_profiles?managed=true", headers=headers)
+query = {
+    'managed': True
+    # 'accessible': True
+    # 'network': 'twitter'
+}
+
+
+response = client.get('network_profiles',
+                      auth=client.get_auth(),
+                      params=query,
+                      http_errors=True)
 
 if response.status_code == 401:
     print('[!] [{0}] Authentication Failed'.format(response.status_code))
-else:
-    results = json.loads(response.content.decode('utf-8'))
+    exit(-1)
 
+results = json.loads(response.content.decode('utf-8'))
 
 if not results:
     print('No network profiles found.')
     exit(-1)
-
 
 accounts = []
 for account in results['data']['accounts']:
