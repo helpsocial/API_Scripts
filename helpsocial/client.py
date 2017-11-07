@@ -139,7 +139,6 @@ class Api(object):
         else:
             raise ValueError('event must be request or response')
 
-    @require_auth
     def get(self, path, params=None, auth=None, **requests_kwargs):
         """Perform a Http GET request on the api at the specified path.
 
@@ -160,13 +159,13 @@ class Api(object):
         :raises ssl.SSLError:
         """
 
+        auth = auth if auth is not None else self.get_auth()
         kwargs = Api._pull_request_kwargs(requests_kwargs)
         return self.__execute(
             Request('GET', self.get_request_uri(path), params=params, auth=auth, **kwargs),
             **requests_kwargs
         )
 
-    @require_auth
     def put(self, path, params=None, json=None,
             auth=None, **requests_kwargs):
         """Perform a Http PUT request on the api at the specified path.
@@ -191,13 +190,13 @@ class Api(object):
         :raises ssl.SSLError:
         """
 
+        auth = auth if auth is not None else self.get_auth()
         kwargs = Api._pull_request_kwargs(requests_kwargs)
         return self.__execute(
                 Request('PUT', self.get_request_uri(path), params=params, json=json, auth=auth, **kwargs),
                 **requests_kwargs
         )
 
-    @require_auth
     def post(self, path, params=None, json=None,
              auth=None, **requests_kwargs):
         """Perform a Http POST request on the api at the specified path.
@@ -222,13 +221,13 @@ class Api(object):
         :raises ssl.SSLError:
         """
 
+        auth = auth if auth is not None else self.get_auth()
         kwargs = Api._pull_request_kwargs(requests_kwargs)
         return self.__execute(
                 Request('POST', self.get_request_uri(path), params=params, json=json, auth=auth, **kwargs),
                 **requests_kwargs
         )
 
-    @require_auth
     def delete(self, path, params=None, json=None,
                auth=None, **requests_kwargs):
         """Perform a Http DELETE request on the api at the specified path.
@@ -253,6 +252,7 @@ class Api(object):
         :raises ssl.SSLError:
         """
 
+        auth = auth if auth is not None else self.get_auth()
         kwargs = Api._pull_request_kwargs(requests_kwargs)
         return self.__execute(
                 Request('DELETE', self.get_request_uri(path), params=params, json=json, auth=auth, **kwargs),

@@ -55,6 +55,7 @@ For advanced usage see the `examples/` directory.
 | auth.py | Authenticates a user. |
 | stream.py | Open realtime and historical stream. Available streams: sse, activities, conversations, events  |
 | get_profiles.py | Script to retrieve available network profiles for the authenticated user. |
+| social.py | Engage with activities through the HelpSocial Connect API. |
 
 ### User Auth
 
@@ -98,4 +99,26 @@ python3 stream.py conversations bounded 20171024T140000  20171024T200000
 python3 stream.py events
 python3 stream.py events bounded 20171024T140000  20171024T200000
 ```
+
+### Activity Reply
+
+**file:** social.py
+**usage:**
+```bash
+python3 stream.py {facebook|instagram|twitter} reply [ ... ]
+
+### Activity Share
+
+**file:** social.py
+**usage:**
+```bash
+python3 stream.py {facebook|instagram|twitter} share [ ... ]
+
+### Activity Create
+
+**file:** stream.py
+**usage:**
+```bash
+python3 stream.py {facebook|twitter} create [ ... ]
+
 
