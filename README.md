@@ -114,6 +114,7 @@ python3 stream.py events bounded 20171024T140000  20171024T200000
 **usage:**
 ```bash
 python3 stream.py {facebook|instagram|twitter} reply [ ... ]
+```
 
 ### Activity Share
 
@@ -121,6 +122,7 @@ python3 stream.py {facebook|instagram|twitter} reply [ ... ]
 **usage:**
 ```bash
 python3 stream.py {facebook|instagram|twitter} share [ ... ]
+```
 
 ### Activity Create
 
@@ -128,6 +130,7 @@ python3 stream.py {facebook|instagram|twitter} share [ ... ]
 **usage:**
 ```bash
 python3 stream.py {facebook|twitter} create [ ... ]
+```
 
 ## Conversation
 
