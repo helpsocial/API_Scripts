@@ -56,14 +56,20 @@ For advanced usage see the `examples/` directory.
 | stream.py | Open realtime and historical stream. Available streams: sse, activities, conversations, events  |
 | get_profiles.py | Script to retrieve available network profiles for the authenticated user. |
 | social.py | Engage with activities through the HelpSocial Connect API. |
+| launch_conversation.py | Launch the conversation single page application. |
+
+
+## Authentication
 
 ### User Auth
 
-*file:** auth.py
+**file:** auth.py
 **usage:**
 ```bash
 python3 auth.py USERNAME
 ```
+
+## Streaming
 
 ### SSE Stream
 
@@ -100,6 +106,8 @@ python3 stream.py events
 python3 stream.py events bounded 20171024T140000  20171024T200000
 ```
 
+## Social
+
 ### Activity Reply
 
 **file:** social.py
@@ -120,5 +128,15 @@ python3 stream.py {facebook|instagram|twitter} share [ ... ]
 **usage:**
 ```bash
 python3 stream.py {facebook|twitter} create [ ... ]
+
+## Conversation
+
+### Lanuch Conversation SPA
+
+**file:** launch_conversation.py
+**usage:**
+```bash
+python3 launch_conversation.py single 1
+```
 
 
