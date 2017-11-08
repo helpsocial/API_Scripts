@@ -12,6 +12,13 @@ from requests import Timeout
 from ssl import SSLError
 
 
+def _pop_key_token(key_path):
+    if key_path is None or '.' not in key_path:
+        return key_path, None
+    parts = key_path.split('.')
+    return parts[0], '.'.join(parts[1:])
+
+
 def data_get(values, key=None, default=None):
     """Retrieve the key from the ``values`` dictionary
     using a "dot notation" key string.
@@ -27,20 +34,25 @@ def data_get(values, key=None, default=None):
     :return: the key value or ``default`` if not found
     """
 
-    if values is None:
-        raise ValueError('values must be dict')
-
-    if key is None:
-        return values
-
-    try:
-        value = reduce(dict.get, key.split('.'), values)
-    except AttributeError:
-        return default
-
-    if value is None:
-        return default
-    return value
+    key, path = _pop_key_token(key)
+    if not key:
+        return values if values is not None else default
+    elif isinstance(values, dict):
+        try:
+            return data_get(values[key], path, default)
+        except KeyError as ex:
+            if not path:
+                return default
+            raise ex
+    elif isinstance(values, list):
+        try:
+            return data_get(values[key], path, default)
+        except IndexError as ex:
+            if key > len(values) and not path:
+                return default
+            raise ex
+    else:
+        raise Exception('Unknown values type ' + str((values, path, default,)))
 
 
 def join(sequence, join_char=''):

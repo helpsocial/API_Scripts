@@ -13,7 +13,7 @@ from threading import Thread
 from time import sleep, time
 
 from .auth import ApplicationAuth, UserAuth, SSEAuth
-from .decorators import require_auth, Authenticate
+from .decorators import Authenticate
 from .exceptions import ApiException, AuthenticationException, \
                         BadRequestException, ForbiddenException, \
                         NotFoundException

@@ -1,6 +1,24 @@
 {
     "auth": {
-        "auth_scope": "<your auth scope>",
-        "api_key": "<your api key>"
+        "auth_scope": "your auth scope",
+        "api_key": "your api key"
+    },
+    "api": {
+        "ssl": true,
+        "host": "api.helpsocial.com",
+        "version": "2.0"
+    },
+    "social": {
+        "user_token": "user token"
+    },
+    "stream": {
+        "user_token": "user token"
+        # or
+        # "username": "user name",
+        # "password": "password"
+    },
+    "launch_conversation": {
+        "user_token": "user token",
+        "spa_url": "https://connect.helpsocial.com/sp/conversation/{conversation_id}"
     }
 }
