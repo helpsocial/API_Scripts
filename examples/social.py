@@ -47,7 +47,6 @@ def read_config(path):
 
     if not path_exists(path):
         raise IOError('{} does not exist.', path)
-
     with open(path, 'r') as file_:
         return json.load(file_)
 
