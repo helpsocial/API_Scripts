@@ -64,7 +64,9 @@ For advanced usage see the `examples/` directory.
 ### User Auth
 
 **file:** auth.py
+
 **usage:**
+
 ```bash
 python3 auth.py USERNAME
 ```
@@ -82,7 +84,9 @@ python3 stream.py sse
 ### Activity Stream
 
 **file:** stream.py
+
 **usage:**
+
 ```bash
 python3 stream.py activities
 python3 stream.py activities bounded 20171024T140000  20171024T200000
@@ -111,7 +115,9 @@ python3 stream.py events bounded 20171024T140000  20171024T200000
 ### Activity Reply
 
 **file:** social.py
+
 **usage:**
+
 ```bash
 python3 stream.py {facebook|instagram|twitter} reply [ ... ]
 ```
@@ -119,7 +125,9 @@ python3 stream.py {facebook|instagram|twitter} reply [ ... ]
 ### Activity Share
 
 **file:** social.py
+
 **usage:**
+
 ```bash
 python3 stream.py {facebook|instagram|twitter} share [ ... ]
 ```
@@ -127,7 +135,9 @@ python3 stream.py {facebook|instagram|twitter} share [ ... ]
 ### Activity Create
 
 **file:** stream.py
+
 **usage:**
+
 ```bash
 python3 stream.py {facebook|twitter} create [ ... ]
 ```
@@ -137,7 +147,9 @@ python3 stream.py {facebook|twitter} create [ ... ]
 ### Lanuch Conversation SPA
 
 **file:** launch_conversation.py
+
 **usage:**
+
 ```bash
 python3 launch_conversation.py single 1
 ```
